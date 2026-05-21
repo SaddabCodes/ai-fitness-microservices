@@ -1,0 +1,9 @@
+package com.sadcodes.userservice.repository;
+
+import com.sadcodes.userservice.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User,String> {
+
+    boolean existsByEmail(String email);
+}
