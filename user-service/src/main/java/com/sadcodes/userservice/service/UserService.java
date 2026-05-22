@@ -26,8 +26,8 @@ public class UserService {
         user.setLastName(request.getLastName());
 
         User savedUser = userRepository.save(user);
-        UserResponse userResponse = new UserResponse();
 
+        UserResponse userResponse = new UserResponse();
         userResponse.setId(savedUser.getId());
         userResponse.setEmail(savedUser.getEmail());
         userResponse.setPassword(savedUser.getPassword());
@@ -39,4 +39,21 @@ public class UserService {
         return userResponse;
     }
 
+    public UserResponse getUserProfile(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserResponse userResponse = new UserResponse();
+
+        userResponse.setId(user.getId());
+        userResponse.setEmail(user.getEmail());
+        userResponse.setPassword(user.getPassword());
+        userResponse.setFirstName(user.getFirstName());
+        userResponse.setLastName(user.getLastName());
+        userResponse.setCreatedAt(user.getCreatedAt());
+        userResponse.setUpdatedAt(user.getUpdatedAt());
+
+        return userResponse;
+
+    }
 }
