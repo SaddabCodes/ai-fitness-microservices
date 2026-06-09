@@ -1,3 +1,11 @@
 spring:
   application:
     name: activity-service
+
+  mongodb:
+    host: localhost
+    port: 27017
+    database: microservice_ai_fitness
+
+server:
+  port: 8082

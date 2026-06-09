@@ -1,0 +1,17 @@
+### TRACK ACTIVITY
+
+POST http://localhost:8082/api/activities
+Content-Type: application/json
+
+{
+  "userId": "user_123",
+  "type": "RUNNING",
+  "duration": 45,
+  "caloriesBurned": 380,
+  "startTime": "2026-06-09T07:30:00",
+  "additionalMetrics": {
+    "distanceKm": 6.2,
+    "avgHeartRate": 148,
+    "steps": 8200
+  }
+}
