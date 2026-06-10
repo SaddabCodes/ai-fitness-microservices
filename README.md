@@ -33,23 +33,6 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 - PostgreSQL (port 5433)
 - MongoDB (port 27017)
 
-## Getting Started
-
-### Start Databases
-```bash
-# PostgreSQL
-docker run --name ai-fitness-postgres -e POSTGRES_PASSWORD=1234 -e POSTGRES_DB=microservice_ai_fitness -p 5433:5432 -d postgres
-
-# MongoDB
-docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
-```
-
-### Start Services (in order)
-```bash
-cd EurekaServer && ./mvnw spring-boot:run
-cd user-service && ./mvnw spring-boot:run
-cd activity-service && ./mvnw spring-boot:run
-```
 
 ## Access Points
 - Eureka Dashboard: http://localhost:8761
