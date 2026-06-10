@@ -15,4 +15,32 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 ## Commit Messages
 
 When the user asks for a commit message, provide it in a professional conventional-commit style based on the actual change. Prefer precise prefixes such as `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `chore`, or `ci` instead of generic wording.
+
+## Project Snapshot
+
+This repository is no longer a single-service setup. It currently contains:
+
+- `user-service`: Spring Boot user domain service on port `8081`, using PostgreSQL on `localhost:5433`
+- `activity-service`: Spring Boot activity domain service on port `8082`, using MongoDB on `localhost:27017`
+- `EurekaServer`: Spring Cloud Netflix Eureka server on port `8761`
+
+Current baseline:
+
+- Spring Boot `4.0.6`
+- Spring Cloud `2025.1.1`
+- `user-service` is configured as a Eureka client
+- `activity-service` is configured as a Eureka client
+- `EurekaServer` is the service registry at `http://localhost:8761/eureka`
+
+## Service-Specific Working Rules
+
+- Do not assume every service uses the same database. `user-service` uses PostgreSQL, while `activity-service` uses MongoDB.
+- When changing service discovery or configuration, keep `spring.application.name`, service ports, and Eureka URLs aligned with each service's `application.yaml`.
+- When editing code, keep changes scoped to the relevant service unless the feature explicitly spans multiple services.
+- For Java or Maven changes, verify the touched service's own `pom.xml` before assuming the same change applies repository-wide, because service dependencies and Java versions may differ.
+
+## Verification Guidance
+
+- Run Maven commands from the service directory you changed, not from the repository root.
+- Prefer validating the smallest affected scope first, such as `compile` or `test` for the touched service.
 <!-- context7 -->

@@ -11,8 +11,11 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 - **Framework**: Spring Boot 4.0.6
 - **Java Version**: 21
 - **Build Tool**: Maven
-- **Database**: PostgreSQL (port 5433)
-- **ORM**: Spring Data JPA with Hibernate
+- **Databases**: 
+  - PostgreSQL (port 5433) - for user-service
+  - MongoDB - for activity-service
+- **ORM**: Spring Data JPA with Hibernate (PostgreSQL), Spring Data MongoDB (MongoDB)
+- **Service Discovery**: Eureka Server (port 8761)
 - **Validation**: Jakarta Validation
 - **Code Generation**: Lombok
 
@@ -20,7 +23,13 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 
 ```
 ai-fitness-microservices/
-├── user-service/          # User management microservice
+├── EurekaServer/          # Service discovery server
+│   ├── src/main/java/com/sadcodes/eurekaserver/
+│   │   └── EurekaServerApplication.java
+│   └── src/main/resources/
+│       └── application.yaml  # Eureka server configuration (port 8761)
+│
+├── user-service/          # User management microservice (port 8080)
 │   ├── src/main/java/com/sadcodes/userservice/
 │   │   ├── entity/        # JPA entities (User, UserRole)
 │   │   ├── dto/           # Data Transfer Objects (request/response)
@@ -29,6 +38,18 @@ ai-fitness-microservices/
 │   │   └── controller/    # REST API endpoints
 │   └── src/main/resources/
 │       └── application.yaml  # Service configuration
+│
+├── activity-service/      # Activity tracking microservice (port 8081)
+│   ├── src/main/java/com/sadcodes/activityservice/
+│   │   ├── model/         # MongoDB documents (Activity, ActivityType)
+│   │   ├── dto/           # Data Transfer Objects (request/response)
+│   │   ├── repositories/  # Spring Data MongoDB repositories
+│   │   ├── services/      # Business logic layer
+│   │   ├── controller/    # REST API endpoints
+│   │   └── config/        # MongoDB configuration
+│   └── src/main/resources/
+│       └── application.yaml  # Service configuration
+│
 └── [future services]
 ```
 
@@ -37,40 +58,48 @@ ai-fitness-microservices/
 ### Build and Test
 
 ```bash
-# Build user-service
-cd user-service && ./mvnw clean install
+# Build any service (replace {service} with: user-service, activity-service, or EurekaServer)
+cd {service} && ./mvnw clean install
 
 # Run tests
-cd user-service && ./mvnw test
+cd {service} && ./mvnw test
 
 # Run tests for a specific class
-cd user-service && ./mvnw test -Dtest=ClassName
+cd {service} && ./mvnw test -Dtest=ClassName
 
 # Run a specific test method
-cd user-service && ./mvnw test -Dtest=ClassName#methodName
+cd {service} && ./mvnw test -Dtest=ClassName#methodName
 ```
 
 ### Running the Application
 
 ```bash
+# Start Eureka Server first (service discovery)
+cd EurekaServer && ./mvnw spring-boot:run
+
 # Run user-service
 cd user-service && ./mvnw spring-boot:run
 
+# Run activity-service
+cd activity-service && ./mvnw spring-boot:run
+
 # Run with specific profile
-cd user-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+cd {service} && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ### Code Quality
 
 ```bash
 # Compile and check for errors
-cd user-service && ./mvnw compile
+cd {service} && ./mvnw compile
 
 # Clean build artifacts
-cd user-service && ./mvnw clean
+cd {service} && ./mvnw clean
 ```
 
 ## Database Setup
+
+### PostgreSQL (for user-service)
 
 The application requires a PostgreSQL database running on port 5433 with:
 - Database name: `microservice_ai_fitness`
@@ -87,6 +116,24 @@ psql -U postgres -p 5433 -c "CREATE DATABASE microservice_ai_fitness;"
 ```
 
 Hibernate DDL is set to `update`, so tables will be created/updated automatically on application startup.
+
+### MongoDB (for activity-service)
+
+MongoDB is used for activity tracking. Configure connection in `activity-service/src/main/resources/application.yaml`:
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/ai_fitness_activities
+```
+
+To set up MongoDB locally:
+```bash
+# Using Docker
+docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
+
+# Or install MongoDB locally and ensure it's running on port 27017
+```
 
 ## Architecture Patterns
 
@@ -113,7 +160,12 @@ Hibernate DDL is set to `update`, so tables will be created/updated automaticall
 
 ## API Endpoints
 
-### User Service (default port 8080)
+### Eureka Server (port 8761)
+
+- Dashboard: `http://localhost:8761`
+- Used for service discovery and registration by other microservices
+
+### User Service (port 8080)
 
 - `POST /api/users/register` - Register a new user
   - Request: `RegisterRequest` (email, password, firstName, lastName)
@@ -121,6 +173,19 @@ Hibernate DDL is set to `update`, so tables will be created/updated automaticall
 
 - `GET /api/users/{userId}` - Get user profile by ID
   - Response: `UserResponse` with 200 OK
+
+### Activity Service (port 8081)
+
+- `POST /api/activities/track` - Track a new activity
+  - Request: `ActivityRequest` (userId, activityType, duration, calories, timestamp)
+  - Response: `ActivityResponse` with 201 Created
+
+- `GET /api/activities/user/{userId}` - Get activities for a user
+  - Query params: `limit`, `offset` (pagination)
+  - Response: List of `ActivityResponse` with 200 OK
+
+- `GET /api/activities/{activityId}` - Get a specific activity
+  - Response: `ActivityResponse` with 200 OK
 
 ## Common Patterns
 
@@ -148,14 +213,23 @@ Hibernate DDL is set to `update`, so tables will be created/updated automaticall
 3. Create controller method with appropriate HTTP method annotation
 4. Return `ResponseEntity` with appropriate status code
 
+## Service Communication
+
+- Services register with Eureka Server on startup
+- Services discover each other through Eureka for inter-service communication
+- Environment variable `EUREKA_SERVER_URL` can override default Eureka location
+
 ## Future Improvements to Consider
 
 - Implement global exception handling with `@ControllerAdvice`
-- Add password encryption (BCrypt) before storing
+- Add password encryption (BCrypt) before storing user passwords
 - Implement DTO mapping library (MapStruct or ModelMapper)
 - Add API documentation (SpringDoc OpenAPI)
-- Implement service discovery (Eureka) and API Gateway
+- Implement API Gateway (Spring Cloud Gateway)
 - Add logging framework configuration (SLF4J/Logback)
 - Implement authentication/authorization (Spring Security with JWT)
+- Add circuit breaker pattern (Spring Cloud Circuit Breaker/Resilience4j)
 - Add integration tests with Testcontainers
 - Configure different profiles (dev, test, prod)
+- Add distributed tracing (Spring Cloud Sleuth + Zipkin)
+- Implement API rate limiting and throttling

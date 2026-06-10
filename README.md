@@ -1,64 +1,77 @@
 # AI Fitness Microservices
 
-This repository contains a microservices-based AI fitness application. The project is currently in its early stage and includes the first service, `user-service`. Additional services will be added as the platform grows.
+A microservices-based AI fitness application built with Spring Boot 4.0.6 and Java 21.
 
-## Current Status
+## Services
 
-The repository currently contains:
-
-- `user-service`: manages user registration and user profile retrieval
-
-The architecture is organized so each service can evolve independently while remaining part of the same system.
+- **EurekaServer** (Port 8761): Service discovery and registry
+- **user-service** (Port 8080): User management (registration and profile retrieval)
+- **activity-service** (Port 8081): Activity tracking with MongoDB support
 
 ## Tech Stack
 
 - Java 21
 - Spring Boot 4.0.6
-- Spring Data JPA
-- Spring Web MVC
-- Jakarta Validation
-- PostgreSQL
-- Maven
+- Spring Cloud Eureka
+- PostgreSQL & MongoDB
 - Lombok
 
-As more microservices are introduced, they will be added at the repository root alongside `user-service`.
-
-## Available Service
+## API Endpoints
 
 ### user-service
+- `POST /api/users/register` - Register a new user
+- `GET /api/users/{userId}` - Get user profile
 
-Purpose:
-Handles user-related operations such as registration and fetching a user profile.
-
-Current endpoints:
-
-- `POST /api/users/register`
-- `GET /api/users/{userId}`
-
-Main package:
-`com.sadcodes.userservice`
+### activity-service
+- `POST /api/activities/track` - Track a new activity
+- `GET /api/activities/user/{userId}` - Get user's activities
+- `GET /api/activities/{activityId}` - Get specific activity
 
 ## Prerequisites
 
-Make sure the following are installed before running the project:
-
 - Java 21
-- Maven or use the included Maven Wrapper
-- PostgreSQL
+- PostgreSQL (port 5433)
+- MongoDB (port 27017)
 
-## Development Direction
+## Getting Started
 
-This repository is intended to grow into a multi-service system. Future services may include domains such as:
+### Start Databases
+```bash
+# PostgreSQL
+docker run --name ai-fitness-postgres -e POSTGRES_PASSWORD=1234 -e POSTGRES_DB=microservice_ai_fitness -p 5433:5432 -d postgres
 
-- authentication
-- workout planning
-- nutrition tracking
-- progress analytics
-- AI recommendations
+# MongoDB
+docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
+```
 
-Each service should follow a consistent structure:
+### Start Services (in order)
+```bash
+cd EurekaServer && ./mvnw spring-boot:run
+cd user-service && ./mvnw spring-boot:run
+cd activity-service && ./mvnw spring-boot:run
+```
 
-- dedicated Spring Boot application
-- isolated domain logic
-- own configuration and dependencies
-- clear API boundaries
+## Access Points
+- Eureka Dashboard: http://localhost:8761
+- user-service: http://localhost:8080
+- activity-service: http://localhost:8081
+
+## Project Structure
+```
+ai-fitness-microservices/
+├── EurekaServer/
+├── user-service/
+├── activity-service/
+├── CLAUDE.md
+└── README.md
+```
+
+## Future Services
+- Authentication Service
+- Workout Planning Service
+- Nutrition Tracking Service
+- Progress Analytics Service
+- AI Recommendations Service
+- API Gateway
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development guidance.
