@@ -8,6 +8,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
+    /**
+     * @LoadBalanced It enables service discovery, without it http://USER-SERVICE is treated as a normal hostname.
+     */
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder(){
