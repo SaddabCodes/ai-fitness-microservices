@@ -13,9 +13,10 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 - **Build Tool**: Maven
 - **Databases**: 
   - PostgreSQL (port 5433) - for user-service
-  - MongoDB - for activity-service
+  - MongoDB (port 27017) - for activity-service and AI-Service
 - **ORM**: Spring Data JPA with Hibernate (PostgreSQL), Spring Data MongoDB (MongoDB)
 - **Service Discovery**: Eureka Server (port 8761)
+- **Message Broker**: Apache Kafka (port 9092) - for inter-service communication
 - **Validation**: Jakarta Validation
 - **Code Generation**: Lombok
 
@@ -39,7 +40,7 @@ ai-fitness-microservices/
 │   └── src/main/resources/
 │       └── application.yaml  # Service configuration
 │
-├── activity-service/      # Activity tracking microservice (port 8081)
+├── activity-service/      # Activity tracking microservice (port 8082)
 │   ├── src/main/java/com/sadcodes/activityservice/
 │   │   ├── model/         # MongoDB documents (Activity, ActivityType)
 │   │   ├── dto/           # Data Transfer Objects (request/response)
@@ -47,6 +48,17 @@ ai-fitness-microservices/
 │   │   ├── services/      # Business logic layer
 │   │   ├── controller/    # REST API endpoints
 │   │   └── config/        # MongoDB configuration
+│   └── src/main/resources/
+│       └── application.yaml  # Service configuration
+│
+├── AI-Service/            # AI recommendation service (port 8083)
+│   ├── src/main/java/com/sadcodes/aiservice/
+│   │   ├── model/         # MongoDB documents (Activity, ActivityType)
+│   │   ├── dto/           # Data Transfer Objects
+│   │   ├── repositories/  # Spring Data MongoDB repositories
+│   │   ├── services/      # Business logic layer (RecommendationService)
+│   │   ├── listeners/     # Kafka message listeners (ActivityMessageListener)
+│   │   └── controller/    # REST API endpoints
 │   └── src/main/resources/
 │       └── application.yaml  # Service configuration
 │
@@ -83,6 +95,9 @@ cd user-service && ./mvnw spring-boot:run
 # Run activity-service
 cd activity-service && ./mvnw spring-boot:run
 
+# Run AI-Service
+cd AI-Service && ./mvnw spring-boot:run
+
 # Run with specific profile
 cd {service} && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
@@ -117,14 +132,26 @@ psql -U postgres -p 5433 -c "CREATE DATABASE microservice_ai_fitness;"
 
 Hibernate DDL is set to `update`, so tables will be created/updated automatically on application startup.
 
-### MongoDB (for activity-service)
+### MongoDB (for activity-service and AI-Service)
 
-MongoDB is used for activity tracking. Configure connection in `activity-service/src/main/resources/application.yaml`:
+MongoDB is used for activity tracking and AI recommendations. Services use the following configuration in `application.yaml`:
+
+**activity-service:**
 ```yaml
 spring:
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/ai_fitness_activities
+  mongodb:
+    host: localhost
+    port: 27017
+    database: microservice_ai_fitness
+```
+
+**AI-Service:**
+```yaml
+spring:
+  mongodb:
+    host: localhost
+    port: 27017
+    database: airecommendationfitness
 ```
 
 To set up MongoDB locally:
@@ -133,6 +160,35 @@ To set up MongoDB locally:
 docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
 
 # Or install MongoDB locally and ensure it's running on port 27017
+```
+
+### Apache Kafka (for inter-service communication)
+
+Kafka is used for asynchronous messaging between services. Configure in `application.yaml`:
+```yaml
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: {service-specific-group-id}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+app:
+  kafka:
+    topic:
+      name: activity-fitness
+```
+
+To set up Kafka locally:
+```bash
+# Using Docker
+docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT confluentinc/cp-kafka
+
+# Or use docker-compose for Kafka + Zookeeper setup
 ```
 
 ## Architecture Patterns
@@ -174,11 +230,12 @@ docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
 - `GET /api/users/{userId}` - Get user profile by ID
   - Response: `UserResponse` with 200 OK
 
-### Activity Service (port 8081)
+### Activity Service (port 8082)
 
 - `POST /api/activities/track` - Track a new activity
   - Request: `ActivityRequest` (userId, activityType, duration, calories, timestamp)
   - Response: `ActivityResponse` with 201 Created
+  - Publishes activity event to Kafka topic `activity-fitness`
 
 - `GET /api/activities/user/{userId}` - Get activities for a user
   - Query params: `limit`, `offset` (pagination)
@@ -186,6 +243,13 @@ docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
 
 - `GET /api/activities/{activityId}` - Get a specific activity
   - Response: `ActivityResponse` with 200 OK
+
+### AI Service (port 8083)
+
+- Consumes activity events from Kafka topic `activity-fitness`
+- Processes activities through `ActivityMessageListener` for recommendations
+- Stores activity data and recommendation data in MongoDB (`airecommendationfitness` database)
+- Exposes recommendation endpoints (details to be documented)
 
 ## Common Patterns
 
@@ -215,9 +279,33 @@ docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
 
 ## Service Communication
 
+### Service Discovery
 - Services register with Eureka Server on startup
 - Services discover each other through Eureka for inter-service communication
 - Environment variable `EUREKA_SERVER_URL` can override default Eureka location
+
+### Inter-Service Messaging
+- **Activity Service → AI Service**: Activity events are published to Kafka topic `activity-fitness`
+- **AI Service Listener**: `ActivityMessageListener` consumes activity events for processing recommendations
+- **Kafka Configuration**: 
+  - activity-service acts as producer (sends activity events)
+  - AI-Service acts as consumer (processes activity events in group `activity-process-group`)
+  - Topic: `activity-fitness`
+  - Serialization: JSON format with type headers disabled
+
+## Kafka Topics
+
+| Topic | Producer | Consumer(s) | Format | Purpose |
+|-------|----------|------------|--------|---------|
+| `activity-fitness` | activity-service | AI-Service | JSON (Activity model) | Publish activity events for AI recommendations |
+
+## Configuration Notes
+
+### YAML Configuration Standards
+- MongoDB uses `host`, `port`, `database` format in this project
+- Kafka properties use lowercase with hyphens (kebab-case): `key-deserializer`, `value-deserializer`
+- Kafka consumer group IDs are service-specific to avoid message conflicts
+- Jackson deserialization is configured to fail on unknown properties: `false` for flexibility
 
 ## Future Improvements to Consider
 
@@ -233,3 +321,4 @@ docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
 - Configure different profiles (dev, test, prod)
 - Add distributed tracing (Spring Cloud Sleuth + Zipkin)
 - Implement API rate limiting and throttling
+- Add error handling for Kafka message processing (dead-letter topics)

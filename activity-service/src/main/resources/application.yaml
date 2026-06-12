@@ -7,10 +7,28 @@ spring:
     port: 27017
     database: microservice_ai_fitness
 
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  jackson:
+    default-property-inclusion: non_null
+
+    deserialization:
+      fail-on-unknown-properties: false
+
 server:
   port: 8082
 
 eureka:
   client:
     service-url:
-      defaultzone: http://localhost:8761/eureka/
+      defaultZone: http://localhost:8761/eureka/
+
+app:
+  kafka:
+    topic:
+      name: activity-fitness

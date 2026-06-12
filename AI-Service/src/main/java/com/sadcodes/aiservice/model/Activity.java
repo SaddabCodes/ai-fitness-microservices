@@ -1,9 +1,8 @@
-package com.sadcodes.activityservice.model;
+package com.sadcodes.aiservice.model;
 
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
@@ -18,7 +17,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "activities")
 public class Activity {
 
     private String id;

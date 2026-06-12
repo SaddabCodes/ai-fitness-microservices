@@ -1,60 +1,96 @@
 # AI Fitness Microservices
 
-A microservices-based AI fitness application built with Spring Boot 4.0.6 and Java 21.
+A microservices-based AI fitness application built with Spring Boot 4.0.6 and Java 21 with inter-service communication via Kafka.
 
 ## Services
 
 - **EurekaServer** (Port 8761): Service discovery and registry
 - **user-service** (Port 8080): User management (registration and profile retrieval)
-- **activity-service** (Port 8081): Activity tracking with MongoDB support
+- **activity-service** (Port 8082): Activity tracking with MongoDB support
+- **AI-Service** (Port 8083): AI-powered recommendations with Kafka message processing
 
 ## Tech Stack
 
 - Java 21
 - Spring Boot 4.0.6
-- Spring Cloud Eureka
-- PostgreSQL & MongoDB
+- Spring Cloud Eureka (Service Discovery)
+- Apache Kafka (Inter-service messaging)
+- PostgreSQL (user-service)
+- MongoDB (activity-service & AI-Service)
 - Lombok
+- Jakarta Validation
 
 ## API Endpoints
 
-### user-service
+### user-service (http://localhost:8080)
 - `POST /api/users/register` - Register a new user
-- `GET /api/users/{userId}` - Get user profile
+  - Request: `RegisterRequest` (email, password, firstName, lastName)
+  - Response: `UserResponse` with 201 Created
 
-### activity-service
+- `GET /api/users/{userId}` - Get user profile
+  - Response: `UserResponse` with 200 OK
+
+### activity-service (http://localhost:8082)
 - `POST /api/activities/track` - Track a new activity
+  - Request: `ActivityRequest` (userId, activityType, duration, calories, timestamp)
+  - Response: `ActivityResponse` with 201 Created
+  - Publishes activity event to Kafka topic `activity-fitness`
+
 - `GET /api/activities/user/{userId}` - Get user's activities
+  - Query params: `limit`, `offset` (pagination)
+  - Response: List of `ActivityResponse` with 200 OK
+
 - `GET /api/activities/{activityId}` - Get specific activity
+  - Response: `ActivityResponse` with 200 OK
+
+### AI-Service (http://localhost:8083)
+- Consumes activity events from Kafka topic `activity-fitness`
+- Processes activities for AI recommendations via `ActivityMessageListener`
+- Stores activity data and recommendations in MongoDB (`airecommendationfitness` database)
 
 ## Prerequisites
 
 - Java 21
 - PostgreSQL (port 5433)
+  - Database: `microservice_ai_fitness`
+  - User: `postgres`
+  - Password: `1234`
 - MongoDB (port 27017)
-
+- Apache Kafka (port 9092)
 
 ## Access Points
 - Eureka Dashboard: http://localhost:8761
 - user-service: http://localhost:8080
-- activity-service: http://localhost:8081
+- activity-service: http://localhost:8082
+- AI-Service: http://localhost:8083
 
 ## Project Structure
 ```
 ai-fitness-microservices/
-├── EurekaServer/
-├── user-service/
-├── activity-service/
-├── CLAUDE.md
+├── EurekaServer/              # Service discovery (port 8761)
+├── user-service/              # User management (port 8080)
+├── activity-service/          # Activity tracking (port 8082)
+├── AI-Service/                # AI recommendations (port 8083)
+├── docker-compose.yml         # Infrastructure services
+├── CLAUDE.md                  # Development guidance
 └── README.md
 ```
+
+## Kafka Topics
+
+| Topic | Producer | Consumer(s) | Format | Purpose |
+|-------|----------|------------|--------|---------|
+| `activity-fitness` | activity-service | AI-Service | JSON | Activity events for AI recommendations |
+
+## Service Communication
+
+- **Eureka**: All services register with Eureka for service discovery
+- **Kafka**: activity-service publishes activity events; AI-Service consumes them for recommendations
+- **REST**: Services communicate via REST endpoints when needed
 
 ## Future Services
 - Authentication Service
 - Workout Planning Service
 - Nutrition Tracking Service
 - Progress Analytics Service
-- AI Recommendations Service
 - API Gateway
-
-See [CLAUDE.md](./CLAUDE.md) for detailed development guidance.
