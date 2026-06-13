@@ -29,6 +29,11 @@ app:
     topic:
       name: activity-fitness
 
+gemini:
+  api:
+    url: ${GEMINI_URL}
+    key: ${GEMINI_KEY}
+
 eureka:
   client:
     service-url:
