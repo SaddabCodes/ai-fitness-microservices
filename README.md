@@ -45,8 +45,9 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ### AI-Service (http://localhost:8083)
 - Consumes activity events from Kafka topic `activity-fitness`
-- Processes activities for AI recommendations via `ActivityMessageListener`
-- Stores activity data and recommendations in MongoDB (`airecommendationfitness` database)
+- Processes activities via `ActivityMessageListener` to get detailed AI recommendations from Gemini AI
+- Parses structured AI responses (analysis, improvements, suggestions, safety)
+- Stores generated recommendations in MongoDB (`airecommendationfitness` database)
 
 ## Prerequisites
 
@@ -71,7 +72,6 @@ ai-fitness-microservices/
 ├── user-service/              # User management (port 8080)
 ├── activity-service/          # Activity tracking (port 8082)
 ├── AI-Service/                # AI recommendations (port 8083)
-├── docker-compose.yml         # Infrastructure services
 ├── CLAUDE.md                  # Development guidance
 └── README.md
 ```
