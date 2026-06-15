@@ -1,23 +1,5 @@
 spring:
   application:
     name: user-service
-
-  datasource:
-    url:  jdbc:postgresql://localhost:5433/microservice_ai_fitness
-    username: postgres
-    password: 1234
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-
-server:
-  port: 8081
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+  config:
+    import: optional:configserver:http://localhost:8888

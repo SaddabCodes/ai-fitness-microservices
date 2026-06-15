@@ -17,7 +17,7 @@ public class ActivityService {
     private final UserValidationService userValidationService;
     private final KafkaTemplate<String ,Activity>kafkaTemplate;
 
-    @Value("${app.kafka.topic.name}")
+    @Value("${kafka.topic.name}")
     private String topicName;
 
     public ActivityResponse trackActivity(ActivityRequest request) {

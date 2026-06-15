@@ -1,44 +1,5 @@
 spring:
   application:
-    name: AI-Service
-
-  mongodb:
-    host: localhost
-    port: 27017
-    database: airecommendationfitness
-
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: activity-process-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.use.type.headers: false
-        spring.json.value.default.type: com.sadcodes.aiservice.model.Activity
-        spring.json.trusted.packages: "*"
-
-  jackson:
-    default-property-inclusion: non_null
-
-    deserialization:
-      fail-on-unknown-properties: false
-
-app:
-  kafka:
-    topic:
-      name: activity-fitness
-
-gemini:
-  api:
-    url: ${GEMINI_URL}
-    key: ${GEMINI_KEY}
-
-eureka:
-  client:
-    service-url:
-      defaultZone:  http://localhost:8761/eureka/
-
-server:
-  port: 8083
-
+    name: ai-service
+  config:
+    import: optional:configserver:http://localhost:8888

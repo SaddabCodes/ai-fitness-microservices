@@ -16,7 +16,7 @@ public class ActivityMessageListener {
     private final ActivityAiService activityAiService;
     private final RecommendationRepository recommendationRepository;
 
-    @KafkaListener(topics = "${app.kafka.topic.name}", groupId = "activity-process-group")
+    @KafkaListener(topics = "${kafka.topic.name}", groupId = "activity-process-group")
     public void processActivity(Activity activity) {
         log.info("Received Activity for processing: {}", activity.getUserId());
         Recommendation recommendation = activityAiService.generateRecommendation(activity);

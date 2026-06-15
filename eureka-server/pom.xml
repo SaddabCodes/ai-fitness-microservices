@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.sadcodes</groupId>
-    <artifactId>EurekaServer</artifactId>
+    <artifactId>eureka-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>EurekaServer</name>
-    <description>EurekaServer</description>
+    <name>eureka-server</name>
+    <description>eureka-server</description>
     <url/>
     <licenses>
         <license/>

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: AI-Service
+    name: ai-service
 
   mongodb:
     host: localhost

@@ -22,7 +22,7 @@ This repository is no longer a single-service setup. It currently contains:
 
 - `user-service`: Spring Boot user domain service on port `8081`, using PostgreSQL on `localhost:5433`
 - `activity-service`: Spring Boot activity domain service on port `8082`, using MongoDB on `localhost:27017`
-- `EurekaServer`: Spring Cloud Netflix Eureka server on port `8761`
+- `eureka-server`: Spring Cloud Netflix Eureka server on port `8761`
 
 Current baseline:
 
@@ -30,7 +30,7 @@ Current baseline:
 - Spring Cloud `2025.1.1`
 - `user-service` is configured as a Eureka client
 - `activity-service` is configured as a Eureka client
-- `EurekaServer` is the service registry at `http://localhost:8761/eureka`
+- `eureka-server` is the service registry at `http://localhost:8761/eureka`
 
 ## Service-Specific Working Rules
 

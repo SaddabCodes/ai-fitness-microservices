@@ -13,7 +13,7 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 - **Build Tool**: Maven
 - **Databases**: 
   - PostgreSQL (port 5433) - for user-service
-  - MongoDB (port 27017) - for activity-service and AI-Service
+  - MongoDB (port 27017) - for activity-service and ai-service
 - **ORM**: Spring Data JPA with Hibernate (PostgreSQL), Spring Data MongoDB (MongoDB)
 - **Service Discovery**: Eureka Server (port 8761)
 - **Message Broker**: Apache Kafka (port 9092) - for inter-service communication
@@ -24,9 +24,9 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 
 ```
 ai-fitness-microservices/
-├── EurekaServer/          # Service discovery server
+├── eureka-server/          # Service discovery server
 │   ├── src/main/java/com/sadcodes/eurekaserver/
-│   │   └── EurekaServerApplication.java
+│   │   └── eureka-serverApplication.java
 │   └── src/main/resources/
 │       └── application.yaml  # Eureka server configuration (port 8761)
 │
@@ -51,7 +51,7 @@ ai-fitness-microservices/
 │   └── src/main/resources/
 │       └── application.yaml  # Service configuration
 │
-├── AI-Service/            # AI recommendation service (port 8083)
+├── ai-service/            # AI recommendation service (port 8083)
 │   ├── src/main/java/com/sadcodes/aiservice/
 │   │   ├── model/         # MongoDB documents (Activity, ActivityType)
 │   │   ├── dto/           # Data Transfer Objects
@@ -70,7 +70,7 @@ ai-fitness-microservices/
 ### Build and Test
 
 ```bash
-# Build any service (replace {service} with: user-service, activity-service, or EurekaServer)
+# Build any service (replace {service} with: user-service, activity-service, or eureka-server)
 cd {service} && ./mvnw clean install
 
 # Run tests
@@ -87,7 +87,7 @@ cd {service} && ./mvnw test -Dtest=ClassName#methodName
 
 ```bash
 # Start Eureka Server first (service discovery)
-cd EurekaServer && ./mvnw spring-boot:run
+cd eureka-server && ./mvnw spring-boot:run
 
 # Run user-service
 cd user-service && ./mvnw spring-boot:run
@@ -95,8 +95,8 @@ cd user-service && ./mvnw spring-boot:run
 # Run activity-service
 cd activity-service && ./mvnw spring-boot:run
 
-# Run AI-Service
-cd AI-Service && ./mvnw spring-boot:run
+# Run ai-service
+cd ai-service && ./mvnw spring-boot:run
 
 # Run with specific profile
 cd {service} && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
@@ -132,7 +132,7 @@ psql -U postgres -p 5433 -c "CREATE DATABASE microservice_ai_fitness;"
 
 Hibernate DDL is set to `update`, so tables will be created/updated automatically on application startup.
 
-### MongoDB (for activity-service and AI-Service)
+### MongoDB (for activity-service and ai-service)
 
 MongoDB is used for activity tracking and AI recommendations. Services use the following configuration in `application.yaml`:
 
@@ -145,7 +145,7 @@ spring:
     database: microservice_ai_fitness
 ```
 
-**AI-Service:**
+**ai-service:**
 ```yaml
 spring:
   mongodb:
@@ -289,7 +289,7 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 - **AI Service Listener**: `ActivityMessageListener` consumes activity events for processing recommendations
 - **Kafka Configuration**: 
   - activity-service acts as producer (sends activity events)
-  - AI-Service acts as consumer (processes activity events in group `activity-process-group`)
+  - ai-service acts as consumer (processes activity events in group `activity-process-group`)
   - Topic: `activity-fitness`
   - Serialization: JSON format with type headers disabled
 
@@ -297,7 +297,7 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 
 | Topic | Producer | Consumer(s) | Format | Purpose |
 |-------|----------|------------|--------|---------|
-| `activity-fitness` | activity-service | AI-Service | JSON (Activity model) | Publish activity events for AI recommendations |
+| `activity-fitness` | activity-service | ai-service | JSON (Activity model) | Publish activity events for AI recommendations |
 
 ## Configuration Notes
 

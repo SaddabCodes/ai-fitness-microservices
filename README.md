@@ -4,10 +4,10 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ## Services
 
-- **EurekaServer** (Port 8761): Service discovery and registry
+- **eureka-server** (Port 8761): Service discovery and registry
 - **user-service** (Port 8080): User management (registration and profile retrieval)
 - **activity-service** (Port 8082): Activity tracking with MongoDB support
-- **AI-Service** (Port 8083): AI-powered recommendations with Kafka message processing
+- **ai-service** (Port 8083): AI-powered recommendations with Kafka message processing
 
 ## Tech Stack
 
@@ -16,7 +16,7 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 - Spring Cloud Eureka (Service Discovery)
 - Apache Kafka (Inter-service messaging)
 - PostgreSQL (user-service)
-- MongoDB (activity-service & AI-Service)
+- MongoDB (activity-service & ai-service)
 - Lombok
 - Jakarta Validation
 
@@ -43,7 +43,7 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 - `GET /api/activities/{activityId}` - Get specific activity
   - Response: `ActivityResponse` with 200 OK
 
-### AI-Service (http://localhost:8083)
+### ai-service (http://localhost:8083)
 - Consumes activity events from Kafka topic `activity-fitness`
 - Processes activities via `ActivityMessageListener` to get detailed AI recommendations from Gemini AI
 - Parses structured AI responses (analysis, improvements, suggestions, safety)
@@ -63,15 +63,15 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 - Eureka Dashboard: http://localhost:8761
 - user-service: http://localhost:8080
 - activity-service: http://localhost:8082
-- AI-Service: http://localhost:8083
+- ai-service: http://localhost:8083
 
 ## Project Structure
 ```
 ai-fitness-microservices/
-├── EurekaServer/              # Service discovery (port 8761)
+├── eureka-server/              # Service discovery (port 8761)
 ├── user-service/              # User management (port 8080)
 ├── activity-service/          # Activity tracking (port 8082)
-├── AI-Service/                # AI recommendations (port 8083)
+├── ai-service/                # AI recommendations (port 8083)
 ├── CLAUDE.md                  # Development guidance
 └── README.md
 ```
@@ -80,12 +80,12 @@ ai-fitness-microservices/
 
 | Topic | Producer | Consumer(s) | Format | Purpose |
 |-------|----------|------------|--------|---------|
-| `activity-fitness` | activity-service | AI-Service | JSON | Activity events for AI recommendations |
+| `activity-fitness` | activity-service | ai-service | JSON | Activity events for AI recommendations |
 
 ## Service Communication
 
 - **Eureka**: All services register with Eureka for service discovery
-- **Kafka**: activity-service publishes activity events; AI-Service consumes them for recommendations
+- **Kafka**: activity-service publishes activity events; ai-service consumes them for recommendations
 - **REST**: Services communicate via REST endpoints when needed
 
 ## Future Services
