@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '{print $NF}')",
+      "Bash(./mvnw clean *)",
+      "Bash(./mvnw install *)",
+      "Bash(./mvnw compile *)",
+      "Bash(timeout 15 ./mvnw spring-boot:run)",
+      "Bash(timeout 20 ./mvnw spring-boot:run)",
+      "Bash(./mvnw validate *)"
+    ]
+  }
+}

@@ -5,7 +5,8 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 ## Services
 
 - **eureka-server** (Port 8761): Service discovery and registry
-- **user-service** (Port 8080): User management (registration and profile retrieval)
+- **api-gateway** (Port 8080): Entry point for all API requests
+- **user-service** (Port 8081): User management (registration and profile retrieval)
 - **activity-service** (Port 8082): Activity tracking with MongoDB support
 - **ai-service** (Port 8083): AI-powered recommendations with Kafka message processing
 
@@ -22,7 +23,14 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ## API Endpoints
 
-### user-service (http://localhost:8080)
+### API Gateway (http://localhost:8080)
+- Routes requests to downstream services through Eureka discovery.
+- Route prefixes:
+  - `/api/users/**` -> `user-service`
+  - `/api/activities/**` -> `activity-service`
+  - `/api/recommendations/**` -> `ai-service`
+
+### user-service (http://localhost:8081)
 - `POST /api/users/register` - Register a new user
   - Request: `RegisterRequest` (email, password, firstName, lastName)
   - Response: `UserResponse` with 201 Created
@@ -61,7 +69,8 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ## Access Points
 - Eureka Dashboard: http://localhost:8761
-- user-service: http://localhost:8080
+- api-gateway: http://localhost:8080
+- user-service: http://localhost:8081
 - activity-service: http://localhost:8082
 - ai-service: http://localhost:8083
 
@@ -69,7 +78,8 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 ```
 ai-fitness-microservices/
 ├── eureka-server/              # Service discovery (port 8761)
-├── user-service/              # User management (port 8080)
+├── api-gateway/               # API gateway (port 8080)
+├── user-service/              # User management (port 8081)
 ├── activity-service/          # Activity tracking (port 8082)
 ├── ai-service/                # AI recommendations (port 8083)
 ├── CLAUDE.md                  # Development guidance
