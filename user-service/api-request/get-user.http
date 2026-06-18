@@ -1,9 +1,3 @@
 ### GET  user
 
 GET http://localhost:9090/api/users/70e91976-6a32-4393-b322-c2d720efd532
-
-#  Run order should be:
-#  1. config-server
-#  2. eureka-server
-#  3. user-service, activity-service, ai-service
-#  4. api-gateway
