@@ -27,6 +27,7 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+    private String keycloakId;
     private String firstName;
     private String lastName;
 

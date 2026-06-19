@@ -1,4 +1,4 @@
-package com.sadcodes.userservice.dto;
+package com.sadcodes.apigateway.user;
 
 import lombok.Data;
 
@@ -10,7 +10,6 @@ public class UserResponse {
     private String id;
     private String email;
     private String password;
-    private String keycloakId;
     private String firstName;
     private String lastName;
     private LocalDateTime createdAt;

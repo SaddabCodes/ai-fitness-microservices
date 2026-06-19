@@ -1,4 +1,4 @@
-package com.sadcodes.userservice.dto;
+package com.sadcodes.apigateway.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,11 +12,11 @@ public class RegisterRequest {
     @Email(message = "Invalid email format")
     private String email;
 
-    private String keycloakId;
-
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must have atleast 6 character ")
     private String password;
+
+    private String keycloakId;
     private String firstName;
     private String lastName;
 }
