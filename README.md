@@ -16,8 +16,10 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 - Spring Boot 4.0.6
 - Spring Cloud Eureka (Service Discovery)
 - Apache Kafka (Inter-service messaging)
+- Keycloak (Identity and Access Management)
 - PostgreSQL (user-service)
 - MongoDB (activity-service & ai-service)
+- Spring WebFlux (WebClient)
 - Lombok
 - Jakarta Validation
 
@@ -25,6 +27,8 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ### API Gateway (http://localhost:8080)
 - Routes requests to downstream services through Eureka discovery.
+- Integrates `KeycloakUserSyncFilter` to intercept requests and synchronize Keycloak users.
+- Uses `WebClient` for inter-service communication with `user-service` to validate and register users.
 - Route prefixes:
   - `/api/users/**` -> `user-service`
   - `/api/activities/**` -> `activity-service`
@@ -32,8 +36,8 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 
 ### user-service (http://localhost:8081)
 - `POST /api/users/register` - Register a new user
-  - Request: `RegisterRequest` (email, password, firstName, lastName)
-  - Response: `UserResponse` with 201 Created
+  - Request: `RegisterRequest` (email, password, keycloakId, firstName, lastName)
+  - Response: `UserResponse` (includes keycloakId) with 201 Created
 
 - `GET /api/users/{userId}` - Get user profile
   - Response: `UserResponse` with 200 OK
@@ -60,6 +64,7 @@ A microservices-based AI fitness application built with Spring Boot 4.0.6 and Ja
 ## Prerequisites
 
 - Java 21
+- Keycloak (Authentication Server)
 - PostgreSQL (port 5433)
   - Database: `microservice_ai_fitness`
   - User: `postgres`
@@ -96,11 +101,9 @@ ai-fitness-microservices/
 
 - **Eureka**: All services register with Eureka for service discovery
 - **Kafka**: activity-service publishes activity events; ai-service consumes them for recommendations
-- **REST**: Services communicate via REST endpoints when needed
+- **REST / WebClient**: `api-gateway` synchronously communicates with `user-service` to validate and register Keycloak users via REST endpoints.
 
 ## Future Services
-- Authentication Service
 - Workout Planning Service
 - Nutrition Tracking Service
 - Progress Analytics Service
-- API Gateway
