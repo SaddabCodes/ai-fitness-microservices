@@ -7,7 +7,9 @@
       "Bash(./mvnw compile *)",
       "Bash(timeout 15 ./mvnw spring-boot:run)",
       "Bash(timeout 20 ./mvnw spring-boot:run)",
-      "Bash(./mvnw validate *)"
+      "Bash(./mvnw validate *)",
+      "Bash(cat)",
+      "Read(//tmp/**)"
     ]
   }
 }

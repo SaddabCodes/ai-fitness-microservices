@@ -1,3 +1,21 @@
-### GET  user
+### NOTE: Replace KEYCLOAK_TOKEN with actual JWT from Keycloak
 
+### GET user via Gateway (requires Keycloak JWT token)
 GET http://localhost:9090/api/users/70e91976-6a32-4393-b322-c2d720efd532
+Authorization: Bearer KEYCLOAK_TOKEN
+
+### Register a new user via Gateway
+POST http://localhost:9090/api/users/register
+Authorization: Bearer KEYCLOAK_TOKEN
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "Password@123",
+  "firstName": "Test",
+  "lastName": "User",
+  "keycloakId": "keycloak-user-id"
+}
+
+### Direct user-service endpoint (no auth required for testing)
+GET http://localhost:8081/api/users/70e91976-6a32-4393-b322-c2d720efd532

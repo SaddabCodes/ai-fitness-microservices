@@ -25,38 +25,67 @@ public class KeycloakUserSyncFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        String userId = exchange.getRequest().getHeaders().getFirst("X-USER-ID");
-        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
-        RegisterRequest registerRequest = getUserDetails(token);
-        if (userId == null) {
-            userId = registerRequest.getKeycloakId();
-        }
+        try {
+            String userId = exchange.getRequest().getHeaders().getFirst("X-USER-ID");
+            String token = exchange.getRequest().getHeaders().getFirst("Authorization");
 
-        if (userId != null && token != null) {
+            if (token == null || token.isEmpty()) {
+                log.warn("No authorization token provided");
+                return chain.filter(exchange);
+            }
+
+            RegisterRequest registerRequest = getUserDetails(token);
+            if (registerRequest == null) {
+                log.warn("Could not extract user details from token");
+                return chain.filter(exchange);
+            }
+
+            if (userId == null) {
+                userId = registerRequest.getKeycloakId();
+            }
+
+            if (userId == null) {
+                log.warn("No user ID available");
+                return chain.filter(exchange);
+            }
+
             String finalUserId = userId;
+            String finalUserId1 = userId;
             return userService.validateUser(userId)
                     .flatMap(exist -> {
                         if (!exist) {
+                            log.info("User {} does not exist, attempting to register", finalUserId1);
                             if (registerRequest != null) {
                                 return userService.registerUser(registerRequest)
+                                        .doOnSuccess(u -> log.info("User {} registered successfully", registerRequest.getEmail()))
+                                        .doOnError(e -> log.error("Error registering user {}: {}", registerRequest.getEmail(), e.getMessage()))
+                                        .onErrorResume(e -> {
+                                            log.error("Failed to register user, continuing anyway", e);
+                                            return Mono.empty();
+                                        })
                                         .then(Mono.empty());
                             } else {
                                 return Mono.empty();
                             }
                         } else {
-                            log.info("User already exist, Skipping sync");
+                            log.debug("User {} already exists, skipping registration", finalUserId1);
                             return Mono.empty();
-
                         }
                     })
-                    .then(Mono.defer(()->{
+                    .then(Mono.defer(() -> {
                         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                                 .header("X-USER-ID", finalUserId)
                                 .build();
                         return chain.filter(exchange.mutate().request(mutatedRequest).build());
-                    }));
+                    }))
+                    .onErrorResume(e -> {
+                        log.error("Error in user sync filter", e);
+                        return chain.filter(exchange);
+                    });
+        } catch (Exception e) {
+            log.error("Unexpected error in KeycloakUserSyncFilter", e);
+            return chain.filter(exchange);
         }
-        return chain.filter(exchange);
     }
 
     private RegisterRequest getUserDetails(String token) {
@@ -70,7 +99,7 @@ public class KeycloakUserSyncFilter implements WebFilter {
             request.setKeycloakId(claims.getStringClaim("sub"));
             request.setFirstName(claims.getStringClaim("given_name"));
             request.setLastName(claims.getStringClaim("family_name"));
-            request.setPassword("12345");
+            request.setPassword("DefaultPassword123");
 
             return request;
 

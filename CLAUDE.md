@@ -8,7 +8,7 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 
 ## Technology Stack
 
-- **Framework**: Spring Boot 4.0.6
+- **Framework**: Spring Boot 4.1.0
 - **Java Version**: 21
 - **Build Tool**: Maven
 - **Databases**: 
@@ -16,12 +16,15 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
   - MongoDB (port 27017) - for activity-service and ai-service
 - **ORM**: Spring Data JPA with Hibernate (PostgreSQL), Spring Data MongoDB (MongoDB)
 - **Service Discovery**: Eureka Server (port 8761)
-- **API Gateway**: Spring Cloud Gateway (port 8080)
+- **API Gateway**: Spring Cloud Gateway (port 9090) with OAuth2 JWT authentication
 - **Configuration Server**: Spring Cloud Config Server (port 8888)
+- **Authentication**: Keycloak (port 8181) for OAuth2/OIDC identity and access management
 - **Message Broker**: Apache Kafka (port 9092) - for inter-service communication
 - **AI Integration**: Google Gemini API - for activity recommendations
+- **HTTP Client**: Spring WebFlux WebClient with @LoadBalanced for service discovery
 - **Validation**: Jakarta Validation
 - **Code Generation**: Lombok
+- **JWT Parsing**: Nimbus JOSE + JWT for token parsing and validation
 
 ## Project Structure
 
@@ -44,11 +47,21 @@ ai-fitness-microservices/
 │           ├── ai-service.yml
 │           └── api-gateway-service.yml
 │
-├── api-gateway/            # API Gateway service
+├── api-gateway/            # API Gateway service (port 9090)
 │   ├── src/main/java/com/sadcodes/apigateway/
-│   │   └── ApiGatewayApplication.java
+│   │   ├── ApiGatewayApplication.java
+│   │   ├── config/           # Security and WebClient configuration
+│   │   │   ├── SecurityConfig.java      # OAuth2 JWT authentication
+│   │   │   └── WebClientConfig.java     # Load-balanced WebClient for user-service
+│   │   ├── filter/           # Web filters for request interception
+│   │   │   └── KeycloakUserSyncFilter.java # Keycloak JWT extraction & user sync
+│   │   └── user/             # User synchronization components
+│   │       ├── UserService.java         # REST calls to user-service
+│   │       ├── RegisterRequest.java     # User registration request DTO
+│   │       ├── UserResponse.java        # User response DTO
+│   │       └── WebClientConfig.java     # WebClient bean configuration
 │   └── src/main/resources/
-│       └── application.yaml  # Gateway configuration (port 8080)
+│       └── application.yaml  # Gateway configuration (port 9090)
 │
 ├── user-service/          # User management microservice (port 8081)
 │   ├── src/main/java/com/sadcodes/userservice/
@@ -254,51 +267,115 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 - Provides centralized configuration for all microservices
 - Configuration files stored in `config-server/src/main/resources/config/`
 
-### API Gateway (port 8080)
+### API Gateway (port 9090)
 
 - Entry point for all API requests
+- **OAuth2 JWT Authentication**: All requests are authenticated using OAuth2 resource server with JWT tokens from Keycloak
+- **Keycloak User Sync**: `KeycloakUserSyncFilter` intercepts authenticated requests and:
+  - Extracts JWT token and user details (email, firstName, lastName, keycloakId)
+  - Validates user existence in user-service via REST call
+  - Auto-registers new Keycloak users in the system
+  - Adds `X-USER-ID` header to requests for downstream services
 - Routes requests to appropriate microservices using load-balanced Eureka discovery
 - Routes configured in `config-server/src/main/resources/config/api-gateway-service.yml`
+- Security configured in `api-gateway/src/main/java/com/sadcodes/apigateway/config/SecurityConfig.java`
+
+**Security Configuration:**
+- JWT validation against Keycloak JWKS endpoint: `http://localhost:8181/realms/fitness-app/protocol/openid-connect/certs`
+- CSRF protection disabled (stateless REST API)
+- All routes except `/eureka/**` require authentication
+- Uses Spring Security with `@EnableWebFluxSecurity` for reactive security
 
 **Gateway Routes:**
 - `/api/users/**` → USER-SERVICE (port 8081)
 - `/api/activities/**` → ACTIVITY-SERVICE (port 8082)
 - `/api/recommendations/**` → AI-SERVICE (port 8083)
+- `/eureka/**` → Eureka Server (publicly accessible)
 
 ### User Service (port 8081)
 
-- `POST /api/users/register` - Register a new user
-  - Request: `RegisterRequest` (email, password, firstName, lastName)
-  - Response: `UserResponse` with 201 Created
+- `POST /api/users/register` - Register a new user (called by API Gateway during user sync)
+  - Request: `RegisterRequest` (email, password, firstName, lastName, keycloakId)
+  - Response: `UserResponse` (includes keycloakId field) with 201 Created
+  - Note: keycloakId field links database user to Keycloak identity
 
 - `GET /api/users/{userId}` - Get user profile by ID
   - Response: `UserResponse` with 200 OK
+
+- `GET /api/users/validate/{keycloakId}` - Validate if user exists (internal, used by gateway)
+  - Response: boolean indicating if user exists
+  
+**User Entity Updates:**
+- Added `keycloakId` field to link Keycloak users with database records
+- Password is auto-set to "12345" during Keycloak sync (can be updated later)
 
 ### Activity Service (port 8082)
 
 - `POST /api/activities/track` - Track a new activity
   - Request: `ActivityRequest` (userId, activityType, duration, calories, timestamp)
   - Response: `ActivityResponse` with 201 Created
-  - Publishes activity event to Kafka topic `activity-events`
+  - Publishes activity event to Kafka topic `activity-fitness` for AI processing
 
 - `GET /api/activities/user/{userId}` - Get activities for a user
   - Query params: `limit`, `offset` (pagination)
   - Response: List of `ActivityResponse` with 200 OK
+  - Requires authentication header with Keycloak JWT token
 
 - `GET /api/activities/{activityId}` - Get a specific activity
   - Response: `ActivityResponse` with 200 OK
+  - Requires authentication header with Keycloak JWT token
 
 ### AI Service (port 8083)
 
-- Consumes activity events from Kafka topic `activity-events`
+- Consumes activity events from Kafka topic `activity-fitness`
 - Processes activities through `ActivityMessageListener` for AI-powered recommendations
 - Uses Google Gemini API to generate personalized fitness recommendations
-- Stores activity data and recommendation data in MongoDB (`aiactivityfitness` database)
+  - Requires `GEMINI_API_KEY` environment variable
+  - API responses include: analysis, improvements, suggestions, safety information
+- Stores activity data and recommendation data in MongoDB (`airecommendationfitness` database)
 - Recommendations are persisted using the `Recommendation` model
 
 **Available Endpoints:**
 - `GET /api/recommendations/user/{userId}` - Get recommendations for a user
+  - Response: List of AI-generated recommendations with 200 OK
 - `POST /api/recommendations` - Create new recommendations (typically called by message listener)
+  - Requires authentication header with Keycloak JWT token
+
+## API Gateway Architecture
+
+### Security Configuration (SecurityConfig.java)
+- **Spring Security WebFlux**: Uses reactive security with `@EnableWebFluxSecurity`
+- **OAuth2 Resource Server**: Configured to validate JWT tokens via Keycloak
+- **Authorization Rules**:
+  - Public routes: `/eureka/**` (permit all, no authentication required)
+  - Protected routes: All other paths require authentication
+- **CSRF Protection**: Disabled for REST API (stateless)
+- **JWT Validation**: Automatic via Spring Security, validates against Keycloak JWKS endpoint
+
+### User Sync Filter (KeycloakUserSyncFilter.java)
+**Flow**:
+1. Intercepts all incoming requests via `WebFilter` interface
+2. Extracts JWT token from `Authorization` header
+3. Parses JWT using Nimbus JOSE+JWT to extract claims:
+   - `sub` → keycloakId
+   - `email` → user email
+   - `given_name` → firstName
+   - `family_name` → lastName
+4. Checks if user exists in database via user-service
+5. If not exists, auto-registers user with RegisterRequest
+6. Adds `X-USER-ID` header to request for downstream services
+
+**Error Handling**: Falls through to standard filter chain if parsing fails
+
+### WebClient Configuration (WebClientConfig.java)
+- **@LoadBalanced WebClient.Builder**: Enables Eureka service discovery
+- **Bean**: `userServiceWebClient` with base URL `http://USER-SERVICE`
+- **Used by**: `UserService` class for REST calls to user-service
+- **Service Discovery**: Automatically resolves `USER-SERVICE` name to actual service instance via Eureka
+
+### Gateway Port
+- Updated from 8080 to **9090** to avoid conflicts with local development environments
+- Configured in: `config-server/src/main/resources/config/api-gateway-service.yml`
 
 ## Common Patterns
 
@@ -326,13 +403,43 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 3. Create controller method with appropriate HTTP method annotation
 4. Return `ResponseEntity` with appropriate status code
 
+## Testing and Development Notes
+
+### Testing Authenticated Endpoints
+All endpoints accessed through the API Gateway (except `/eureka/**`) require a valid Keycloak JWT token in the `Authorization: Bearer <token>` header.
+
+**Without token**: Requests will receive 401 Unauthorized
+**With expired token**: Requests will receive 401 Unauthorized
+**With valid token**: Keycloak user is auto-synced, request processed, `X-USER-ID` header added
+
+### Direct Service Access (Bypassing Gateway)
+Services can be accessed directly on their individual ports (8081, 8082, 8083) without authentication for development/testing. However, in production, all traffic should route through the gateway for consistent authentication and user sync.
+
+### Kafka Topic Configuration
+- Ensure Kafka is running and accessible at `localhost:9092` before starting activity-service
+- Check Kafka topic `activity-fitness` exists or allow auto-creation
+- Monitor with: `kafka-console-consumer --bootstrap-server localhost:9092 --topic activity-fitness --from-beginning`
+
+### Database Connections
+- PostgreSQL must be running on port 5433 with database `microservice_ai_fitness`
+- MongoDB must be running on port 27017 with collections auto-created on first insert
+- Verify connections in service logs during startup
+
 ## Service Communication
+
+### Authentication & Authorization
+- **OAuth2 JWT**: API Gateway enforces OAuth2 authentication on all routes (except `/eureka/**`)
+- **Token Validation**: JWT tokens are validated against Keycloak's JWKS endpoint
+- **User Sync**: `KeycloakUserSyncFilter` automatically synchronizes Keycloak users to the database
+- **Service Discovery Integration**: Keycloak users are linked to database users via `keycloakId` field
+- **Downstream Headers**: Gateway adds `X-USER-ID` header to requests for downstream service communication
 
 ### Service Discovery
 - Services register with Eureka Server on startup
 - Services discover each other through Eureka for inter-service communication
 - Environment variable `EUREKA_SERVER_URL` can override default Eureka location
 - Gateway uses load balancing (`lb://SERVICE-NAME`) to route to registered services
+- `@LoadBalanced` WebClient in gateway enables service discovery for user-service REST calls
 
 ### Centralized Configuration
 - Config Server provides centralized configuration management
@@ -342,17 +449,23 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
   - `user-service.yml` - PostgreSQL connection, Eureka settings
   - `activity-service.yml` - MongoDB URI, Kafka topics, Eureka settings
   - `ai-service.yml` - Inherits activity-service config, additional AI settings
-  - `api-gateway-service.yml` - Route definitions for all microservices
+  - `api-gateway-service.yml` - Route definitions, OAuth2 JWKS endpoint, port 9090
 
 ### Inter-Service Messaging
-- **Activity Service → AI Service**: Activity events are published to Kafka topic `activity-events`
+- **Activity Service → AI Service**: Activity events are published to Kafka topic `activity-fitness`
 - **AI Service Listener**: `ActivityMessageListener` consumes activity events for processing recommendations via Google Gemini API
 - **Kafka Configuration**: 
   - activity-service acts as producer (sends activity events)
   - ai-service acts as consumer (processes activity events in group `activity-process-group`)
-  - Topic: `activity-events`
+  - Topic: `activity-fitness`
   - Serialization: JSON format with type headers disabled
   - Bootstrap servers: `localhost:9092`
+
+### Gateway to User-Service Communication
+- **WebClient**: Uses `@LoadBalanced WebClient.Builder` for service discovery-aware HTTP calls
+- **Purpose**: Validate user existence and register new Keycloak users during request interception
+- **Base URL**: `http://USER-SERVICE` (resolved via Eureka)
+- **Called by**: `KeycloakUserSyncFilter` during request processing
 
 ### AI Integration
 - **Service**: `ActivityMessageListener` (Kafka consumer)
@@ -365,11 +478,34 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
   5. `ActivityAiService` handles service-layer logic
 - **Note**: Requires `GEMINI_API_KEY` environment variable
 
+## Keycloak Integration
+
+### Keycloak Server (port 8181)
+- **Realm**: `fitness-app`
+- **Purpose**: OAuth2/OIDC identity provider for the entire application
+- **User Sync Flow**: When an authenticated Keycloak user makes a request to the API Gateway:
+  1. JWT token is validated against Keycloak's JWKS endpoint
+  2. `KeycloakUserSyncFilter` extracts user claims (email, firstName, lastName, keycloakId)
+  3. Gateway calls user-service to check if user exists in database
+  4. If not, user is auto-registered with keycloakId linking to Keycloak identity
+  5. Subsequent requests include `X-USER-ID` header for service-to-service communication
+
+### JWT Token Claims
+- **sub**: Keycloak user ID (mapped to keycloakId in database)
+- **email**: User's email address
+- **given_name**: User's first name
+- **family_name**: User's last name
+
+### Configuration
+- JWKS endpoint: `http://localhost:8181/realms/fitness-app/protocol/openid-connect/certs`
+- Configured in: `config-server/src/main/resources/config/api-gateway-service.yml`
+- Token validation happens automatically via Spring Security OAuth2 Resource Server
+
 ## Kafka Topics
 
 | Topic | Producer | Consumer(s) | Format | Purpose |
 |-------|----------|------------|--------|---------|
-| `activity-events` | activity-service | ai-service | JSON (Activity model) | Publish activity events for AI recommendations |
+| `activity-fitness` | activity-service | ai-service | JSON (Activity model) | Publish activity events for AI recommendations |
 
 ## Configuration Notes
 
@@ -390,24 +526,30 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 ## Completed Features
 
 - ✅ API Gateway (Spring Cloud Gateway) - routes requests to microservices
+- ✅ OAuth2 JWT Authentication with Keycloak integration
+- ✅ Keycloak User Synchronization Filter - auto-registers Keycloak users to database
 - ✅ Centralized Configuration Server (Spring Cloud Config Server)
+- ✅ Service Discovery with Eureka and Load Balancing
 - ✅ Kafka messaging for inter-service communication
 - ✅ Google Gemini AI integration for personalized recommendations
-- ✅ MongoDB persistence for recommendations
+- ✅ MongoDB persistence for recommendations and activities
+- ✅ WebClient with @LoadBalanced for service-to-service communication
 
 ## Future Improvements to Consider
 
 - Implement global exception handling with `@ControllerAdvice`
-- Add password encryption (BCrypt) before storing user passwords
+- Enhance password management: use proper encryption (BCrypt) instead of hardcoded "12345"
 - Implement DTO mapping library (MapStruct or ModelMapper)
-- Add API documentation (SpringDoc OpenAPI)
-- Add logging framework configuration (SLF4J/Logback)
-- Implement authentication/authorization (Spring Security with JWT)
-- Add circuit breaker pattern (Spring Cloud Circuit Breaker/Resilience4j)
-- Add integration tests with Testcontainers
-- Configure different profiles (dev, test, prod)
-- Add distributed tracing (Spring Cloud Sleuth + Zipkin)
-- Implement API rate limiting and throttling
+- Add API documentation (SpringDoc OpenAPI with OAuth2 security scheme)
+- Add logging framework configuration (SLF4J/Logback) with correlation IDs
+- Add role-based authorization (RBAC) leveraging Keycloak roles in JWT claims
+- Add circuit breaker pattern (Spring Cloud Circuit Breaker/Resilience4j) for user-service calls
+- Add integration tests with Testcontainers (PostgreSQL, MongoDB, Kafka)
+- Configure different profiles (dev, test, prod) with environment-specific Keycloak realms
+- Add distributed tracing (Spring Cloud Sleuth + Zipkin) with JWT correlation
+- Implement API rate limiting and throttling at gateway level
 - Add error handling for Kafka message processing (dead-letter topics)
-- Add health checks and monitoring endpoints
-- Implement API versioning strategy
+- Add health checks and monitoring endpoints (Spring Boot Actuator)
+- Implement API versioning strategy with gateway route versioning
+- Add refresh token support for long-lived sessions
+- Implement user preference caching to reduce database lookups during sync
