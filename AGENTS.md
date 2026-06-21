@@ -22,19 +22,23 @@ This repository is no longer a single-service setup. It currently contains:
 
 - `user-service`: Spring Boot user domain service on port `8081`, using PostgreSQL on `localhost:5433`
 - `activity-service`: Spring Boot activity domain service on port `8082`, using MongoDB on `localhost:27017`
+- `ai-service`: Spring Boot AI recommendation service on port `8083`, using MongoDB on `localhost:27017`, Kafka on `localhost:9092`, and Gemini API
+- `api-gateway`: Spring Cloud Gateway on port `9090`, using Keycloak on `localhost:8181` for OAuth2/JWT
+- `config-server`: Spring Cloud Config server on port `8888`
 - `eureka-server`: Spring Cloud Netflix Eureka server on port `8761`
 
 Current baseline:
 
 - Spring Boot `4.0.6`
 - Spring Cloud `2025.1.1`
-- `user-service` is configured as a Eureka client
-- `activity-service` is configured as a Eureka client
+- `user-service`, `activity-service`, `ai-service`, and `api-gateway` are configured as Eureka clients and use `config-server` for externalized configuration
 - `eureka-server` is the service registry at `http://localhost:8761/eureka`
 
 ## Service-Specific Working Rules
 
-- Do not assume every service uses the same database. `user-service` uses PostgreSQL, while `activity-service` uses MongoDB.
+- Do not assume every service uses the same database. `user-service` uses PostgreSQL, while `activity-service` and `ai-service` use MongoDB.
+- `ai-service` integrates with Kafka and requires Gemini API credentials.
+- `api-gateway` handles routing and JWT-based authentication via Keycloak.
 - When changing service discovery or configuration, keep `spring.application.name`, service ports, and Eureka URLs aligned with each service's `application.yaml`.
 - When editing code, keep changes scoped to the relevant service unless the feature explicitly spans multiple services.
 - For Java or Maven changes, verify the touched service's own `pom.xml` before assuming the same change applies repository-wide, because service dependencies and Java versions may differ.

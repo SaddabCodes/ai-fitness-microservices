@@ -1,109 +1,223 @@
-# AI Fitness Microservices
+<div align="center">
+  <h1>🏃 AI Fitness Microservices 🏋️‍♂️</h1>
+  <p><b>A highly scalable, cloud-native, AI-powered fitness tracking and recommendation platform.</b></p>
 
-A microservices-based AI fitness application built with Spring Boot 4.0.6 and Java 21 with inter-service communication via Kafka.
+  [![Java](https://img.shields.io/badge/Java-21-orange.svg?style=for-the-badge&logo=java)](https://jdk.java.net/21/)
+  [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-brightgreen.svg?style=for-the-badge&logo=spring)](https://spring.io/projects/spring-boot)
+  [![Spring Cloud](https://img.shields.io/badge/Spring_Cloud-2025.1.1-blue.svg?style=for-the-badge&logo=spring)](https://spring.io/projects/spring-cloud)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-Latest-green.svg?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-blue.svg?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+  [![Kafka](https://img.shields.io/badge/Apache_Kafka-Latest-black.svg?style=for-the-badge&logo=apachekafka)](https://kafka.apache.org/)
+  [![Keycloak](https://img.shields.io/badge/Keycloak-OAuth2-cyan.svg?style=for-the-badge&logo=keycloak)](https://www.keycloak.org/)
+</div>
 
-## Services
+<br/>
 
-- **eureka-server** (Port 8761): Service discovery and registry
-- **api-gateway** (Port 8080): Entry point for all API requests
-- **user-service** (Port 8081): User management (registration and profile retrieval)
-- **activity-service** (Port 8082): Activity tracking with MongoDB support
-- **ai-service** (Port 8083): AI-powered recommendations with Kafka message processing
+## 📖 Table of Contents
+- [About The Project](#-about-the-project)
+- [System Architecture](#-system-architecture)
+- [Microservices Ecosystem](#-microservices-ecosystem)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Infrastructure Setup](#infrastructure-setup)
+  - [Service Configuration](#service-configuration)
+- [Security & Authentication](#-security--authentication)
+- [API Endpoints](#-api-endpoints)
 
-## Tech Stack
+---
 
-- Java 21
-- Spring Boot 4.0.6
-- Spring Cloud Eureka (Service Discovery)
-- Apache Kafka (Inter-service messaging)
-- Keycloak (Identity and Access Management)
-- PostgreSQL (user-service)
-- MongoDB (activity-service & ai-service)
-- Spring WebFlux (WebClient)
-- Lombok
-- Jakarta Validation
+## 🚀 About The Project
 
-## API Endpoints
+**AI Fitness Microservices** is a robust and distributed system designed to handle user activity logging and deliver AI-driven personalized fitness recommendations. The system is built upon a modern **Spring Cloud Microservices Architecture**, implementing patterns like Service Discovery, Centralized Configuration, API Gateways, Event-Driven asynchronous processing via Apache Kafka, and state-of-the-art Generative AI integration using the Google Gemini API.
 
-### API Gateway (http://localhost:8080)
-- Routes requests to downstream services through Eureka discovery.
-- Integrates `KeycloakUserSyncFilter` to intercept requests and synchronize Keycloak users.
-- Uses `WebClient` for inter-service communication with `user-service` to validate and register users.
-- Route prefixes:
-  - `/api/users/**` -> `user-service`
-  - `/api/activities/**` -> `activity-service`
-  - `/api/recommendations/**` -> `ai-service`
+---
 
-### user-service (http://localhost:8081)
-- `POST /api/users/register` - Register a new user
-  - Request: `RegisterRequest` (email, password, keycloakId, firstName, lastName)
-  - Response: `UserResponse` (includes keycloakId) with 201 Created
+## 🏗️ System Architecture
 
-- `GET /api/users/{userId}` - Get user profile
-  - Response: `UserResponse` with 200 OK
+Our system leverages an advanced microservices topology. Below is a high-level overview of our components and their interactions:
 
-### activity-service (http://localhost:8082)
-- `POST /api/activities/track` - Track a new activity
-  - Request: `ActivityRequest` (userId, activityType, duration, calories, timestamp)
-  - Response: `ActivityResponse` with 201 Created
-  - Publishes activity event to Kafka topic `activity-fitness`
-
-- `GET /api/activities/user/{userId}` - Get user's activities
-  - Query params: `limit`, `offset` (pagination)
-  - Response: List of `ActivityResponse` with 200 OK
-
-- `GET /api/activities/{activityId}` - Get specific activity
-  - Response: `ActivityResponse` with 200 OK
-
-### ai-service (http://localhost:8083)
-- Consumes activity events from Kafka topic `activity-fitness`
-- Processes activities via `ActivityMessageListener` to get detailed AI recommendations from Gemini AI
-- Parses structured AI responses (analysis, improvements, suggestions, safety)
-- Stores generated recommendations in MongoDB (`airecommendationfitness` database)
-
-## Prerequisites
-
-- Java 21
-- Keycloak (Authentication Server)
-- PostgreSQL (port 5433)
-  - Database: `microservice_ai_fitness`
-  - User: `postgres`
-  - Password: `1234`
-- MongoDB (port 27017)
-- Apache Kafka (port 9092)
-
-## Access Points
-- Eureka Dashboard: http://localhost:8761
-- api-gateway: http://localhost:8080
-- user-service: http://localhost:8081
-- activity-service: http://localhost:8082
-- ai-service: http://localhost:8083
-
-## Project Structure
+```mermaid
+graph TD
+    Client[📱 Client/Browser] -->|HTTPs Request| Gateway(API Gateway :9090)
+    
+    subgraph Infrastructure
+        Eureka[Service Registry Eureka :8761]
+        Config[Config Server :8888]
+        Keycloak[Auth Keycloak :8181]
+    end
+    
+    subgraph Microservices
+        US[User Service :8081]
+        AS[Activity Service :8082]
+        AI[AI Service :8083]
+    end
+    
+    subgraph Databases & Message Brokers
+        PG[(PostgreSQL :5433)]
+        Mongo[(MongoDB :27017)]
+        Kafka{{Apache Kafka :9092}}
+    end
+    
+    subgraph External APIs
+        Gemini[Google Gemini API]
+    end
+    
+    %% Gateway Routing
+    Gateway -->|JWT Validate| Keycloak
+    Gateway -->|/api/users/**| US
+    Gateway -->|/api/activities/**| AS
+    Gateway -->|/api/recommendations/**| AI
+    
+    %% Config and Discovery
+    Gateway -.-> Eureka
+    US -.-> Eureka
+    AS -.-> Eureka
+    AI -.-> Eureka
+    
+    US -.-> Config
+    AS -.-> Config
+    AI -.-> Config
+    Gateway -.-> Config
+    
+    %% Database connections
+    US -->|JPA| PG
+    AS -->|Spring Data| Mongo
+    AI -->|Spring Data| Mongo
+    
+    %% Asynchronous Messaging
+    AS -->|Publish Activity Event| Kafka
+    Kafka -->|Consume Event| AI
+    
+    %% External integrations
+    AI -->|Fetch Recommendations| Gemini
+    
+    classDef infra fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef service fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef db fill:#bfb,stroke:#333,stroke-width:2px;
+    classDef ext fill:#fbf,stroke:#333,stroke-width:2px;
+    
+    class Eureka,Config,Keycloak infra;
+    class US,AS,AI,Gateway service;
+    class PG,Mongo,Kafka db;
+    class Gemini ext;
 ```
-ai-fitness-microservices/
-├── eureka-server/              # Service discovery (port 8761)
-├── api-gateway/               # API gateway (port 8080)
-├── user-service/              # User management (port 8081)
-├── activity-service/          # Activity tracking (port 8082)
-├── ai-service/                # AI recommendations (port 8083)
-├── CLAUDE.md                  # Development guidance
-└── README.md
+
+---
+
+## 🧩 Microservices Ecosystem
+
+Our system is decomposed into 6 independent services, each with a distinct bounded context:
+
+| Service Name | Port | Description | Stack / Tech |
+|--------------|------|-------------|--------------|
+| **`api-gateway`** | `9090` | Single entry point for all client requests. Handles JWT validation, intelligent routing, and user sync filters. | Spring Cloud Gateway, WebFlux, Keycloak JWT |
+| **`eureka-server`** | `8761` | Service Registry allowing dynamic discovery of microservices. | Spring Cloud Netflix Eureka |
+| **`config-server`** | `8888` | Centralized configuration management serving environment-specific properties to all clients. | Spring Cloud Config (Native profile) |
+| **`user-service`** | `8081` | Manages user profiles and domain logic. Connected to a relational store for strict consistency. | PostgreSQL, Spring Data JPA |
+| **`activity-service`** | `8082` | Handles user workouts and fitness logs. Publishes events to Kafka when new activities are tracked. | MongoDB, Spring Kafka Producer |
+| **`ai-service`** | `8083` | Consumes activity events asynchronously. Uses Google Gemini to generate dynamic, tailored fitness plans. | MongoDB, Kafka Consumer, Spring AI / WebClient |
+
+---
+
+## 🛠 Tech Stack
+
+- **Core**: Java 21, Spring Boot 4.0.6, Spring Cloud 2025.1.1
+- **Security**: Keycloak (OAuth2.0 / OpenID Connect), Spring Security Resource Server
+- **Messaging**: Apache Kafka for scalable, decoupled event-driven architecture
+- **Databases**:
+  - PostgreSQL (ACID-compliant relational store for Users)
+  - MongoDB (Document store for flexible Activity schemas and AI Recommendations)
+- **Tooling**: Docker, Docker Compose, Maven
+- **External Integration**: Google Gemini API
+
+---
+
+## ⚙️ Getting Started
+
+### 📋 Prerequisites
+- **Java 21 JDK**
+- **Docker** and **Docker Compose**
+- **Maven** (3.8+)
+- **Google Gemini API Key** (for `ai-service`)
+
+### 🐳 1. Infrastructure Setup
+
+Spin up the essential infrastructure components using Docker:
+
+```bash
+# 1. PostgreSQL (For User Service)
+docker run --name ai-fitness-postgres -d \
+  -e POSTGRES_PASSWORD=1234 \
+  -e POSTGRES_DB=microservice_ai_fitness \
+  -p 5433:5432 postgres
+
+# 2. MongoDB (For Activity & AI Services)
+docker run --name ai-fitness-mongo -d -p 27017:27017 mongo
+
+# 3. Apache Kafka (Message Broker)
+docker run --name ai-fitness-kafka -d -p 9092:9092 \
+  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 \
+  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT \
+  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
+  confluentinc/cp-kafka
+
+# 4. Keycloak (Authentication Server)
+docker run --name ai-fitness-keycloak -d -p 8181:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  quay.io/keycloak/keycloak:latest start-dev
 ```
 
-## Kafka Topics
+### 🔑 2. Keycloak Realm Configuration
+1. Open Keycloak at `http://localhost:8181` and log in as `admin` / `admin`.
+2. Create a new realm named **`fitness-app`**.
+3. Create a new Client for your frontend/API testing (e.g., `fitness-client` with standard OAuth2 flows).
+4. Create test users under this realm to obtain JWTs.
 
-| Topic | Producer | Consumer(s) | Format | Purpose |
-|-------|----------|------------|--------|---------|
-| `activity-fitness` | activity-service | ai-service | JSON | Activity events for AI recommendations |
+### 🏃 3. Service Bootstrapping Order
 
-## Service Communication
+To prevent startup dependency failures, launch the Spring Boot services in the following order:
 
-- **Eureka**: All services register with Eureka for service discovery
-- **Kafka**: activity-service publishes activity events; ai-service consumes them for recommendations
-- **REST / WebClient**: `api-gateway` synchronously communicates with `user-service` to validate and register Keycloak users via REST endpoints.
+1. **`config-server`** (Run `mvn spring-boot:run` in `config-server` directory)
+2. **`eureka-server`**
+3. **`user-service`** & **`activity-service`**
+4. **`ai-service`** 
+   > **Note:** Export your Gemini API credentials before starting `ai-service`.
+   > ```bash
+   > export GEMINI_KEY="your-gemini-api-key"
+   > export GEMINI_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+   > ```
+5. **`api-gateway`**
 
-## Future Services
-- Workout Planning Service
-- Nutrition Tracking Service
-- Progress Analytics Service
+---
+
+## 🛡️ Security & Authentication
+
+The entire system is secured behind the **API Gateway**, functioning as an OAuth2 Resource Server. 
+The authentication flow works as follows:
+
+1. **User Login**: The client requests an access token from the Keycloak server (`http://localhost:8181/realms/fitness-app/protocol/openid-connect/token`).
+2. **Gateway Validation**: The client sends the Bearer JWT token to `api-gateway` (`9090`).
+3. **Context Propagation**: The Gateway validates the signature using Keycloak's JWK set, extracts the user ID, and dynamically syncs the user details before routing the request to downstream services like `user-service` or `activity-service`.
+
+---
+
+## 🌐 API Endpoints Overview
+
+All requests should be routed through the `api-gateway` on `http://localhost:9090` and must include the `Authorization: Bearer <token>` header.
+
+### User Service
+- `GET /api/users/profile` - Fetch current user profile
+- `PUT /api/users/profile` - Update user settings
+
+### Activity Service
+- `POST /api/activities` - Log a new fitness activity (e.g., Running, Weightlifting)
+- `GET /api/activities` - Retrieve user's historical fitness logs
+
+### AI Recommendation Service
+- `GET /api/recommendations/latest` - Fetch the most recent AI-generated fitness plan
+- `POST /api/recommendations/generate` - Manually trigger a new AI plan generation based on recent Kafka-consumed activities.
+
+---
+*Developed with ❤️ and Spring Cloud.*
