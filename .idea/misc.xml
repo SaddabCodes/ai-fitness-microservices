@@ -12,6 +12,12 @@
         <option value="$PROJECT_DIR$/eureka-server/pom.xml" />
         <option value="$PROJECT_DIR$/gateway/pom.xml" />
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/activity-service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/AI-Service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/Config-Server/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/eureka-server/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/user-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
