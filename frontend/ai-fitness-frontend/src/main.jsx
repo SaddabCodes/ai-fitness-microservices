@@ -1,22 +1,12 @@
-import { createSlice } from "@reduxjs/toolkit";
+import ReactDOM from "react-dom/client";
+import { Provider } from "react-redux";
+import App from "./App";
+import { store } from "./store/store";
 
-const counterSlice = createSlice({
-  name: "counter",
-  initialState: {
-    user: JSON.parse(localStorage.getItem("user")) || null,
-    token: localStorage.getItem("token")|| null,
-    userId: localStorage.getItem("userId") || null,
-  },
-  reducers: {
-    setCredentials(state,action)=> {
-     
-    },
-    logout(state) =>{
-      state.value--;
-    },
-   
-  },
-});
-
-export const { increment, decrement, incrementByAmount } = counterSlice.actions;
-export default counterSlice.reducer;
+// As of React 18
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+);
