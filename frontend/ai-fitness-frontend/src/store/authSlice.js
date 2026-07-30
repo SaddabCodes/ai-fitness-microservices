@@ -1,20 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const initialState = { value: 0 };
+
 const counterSlice = createSlice({
   name: "counter",
-  initialState: {
-    user: JSON.parse(localStorage.getItem("user")) || null,
-    token: localStorage.getItem("token")|| null,
-    userId: localStorage.getItem("userId") || null,
-  },
+  initialState,
   reducers: {
-    setCredentials(state,action)=> {
-     
+    increment(state) {
+      state.value++;
     },
-    logout(state) =>{
+    decrement(state) {
       state.value--;
     },
-   
+    incrementByAmount(state, action) {
+      state.value += action.payload;
+    },
   },
 });
 
