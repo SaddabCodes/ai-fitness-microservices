@@ -1,50 +1,46 @@
-# AGENTS.md
+# Repository Guidelines
 
-<!-- context7 -->
-Use Context7 MCP to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service -- even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer -- your training data may not reflect recent changes. Prefer this over web search for library docs.
+## Project Structure
 
-Do not use for: refactoring, writing scripts from scratch, debugging business logic, code review, or general programming concepts.
+This repository contains a Spring Cloud backend and a React frontend:
 
-## Steps
+- `backend/` contains the independent Maven services: `user-service`, `activity-service`, `AI-Service`, `api-gateway`, `Config-Server`, and `eureka-server`.
+- Each service keeps production code in `src/main`, tests in `src/test`, and its own `pom.xml` and configuration.
+- `frontend/ai-fitness-frontend/` is a Vite React application; source code is in `src/` and static assets are in `public/`.
+- `README.md` documents the runtime topology, ports, infrastructure, and API routes.
 
-1. Always start with `resolve-library-id` using the library name and the user's question, unless the user provides an exact library ID in `/org/project` format
-2. Pick the best match (ID format: `/org/project`) by: exact name match, description relevance, code snippet count, source reputation (High/Medium preferred), and benchmark score (higher is better). If results don't look right, try alternate names or queries (e.g., "next.js" not "nextjs", or rephrase the question). Use version-specific IDs when the user mentions a version
-3. `query-docs` with the selected library ID and the user's full question (not single words)
-4. Answer using the fetched docs
+## Build, Test, and Development Commands
 
-## Commit Messages
+Run Maven commands from the service directory being changed, for example:
 
-When the user asks for a commit message, provide it in a professional conventional-commit style based on the actual change. Prefer precise prefixes such as `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `chore`, or `ci` instead of generic wording.
+```bash
+cd backend/activity-service
+./mvnw test
+./mvnw spring-boot:run
+```
 
-## Project Snapshot
+Use `mvnw.cmd` on Windows. `test` compiles and runs the service tests; `spring-boot:run` starts that service locally. Start infrastructure and services in the order documented in `README.md` (Config Server, Eureka, domain services, AI service, then Gateway). For the frontend:
 
-This repository is no longer a single-service setup. It currently contains:
+```bash
+cd frontend/ai-fitness-frontend
+npm install
+npm run lint
+npm run build
+npm run dev
+```
 
-- `user-service`: Spring Boot user domain service on port `8081`, using PostgreSQL on `localhost:5433`
-- `activity-service`: Spring Boot activity domain service on port `8082`, using MongoDB on `localhost:27017`
-- `ai-service`: Spring Boot AI recommendation service on port `8083`, using MongoDB on `localhost:27017`, Kafka on `localhost:9092`, and Gemini API
-- `api-gateway`: Spring Cloud Gateway on port `9090`, using Keycloak on `localhost:8181` for OAuth2/JWT
-- `config-server`: Spring Cloud Config server on port `8888`
-- `eureka-server`: Spring Cloud Netflix Eureka server on port `8761`
+## Coding Style and Naming
 
-Current baseline:
+Use four-space indentation for Java and follow standard Spring naming: `PascalCase` classes, `camelCase` methods/fields, and descriptive package names. Keep controllers, services, repositories, DTOs, and configuration in their existing package structure. Use `PascalCase` React components and `camelCase` hooks, functions, and variables. Run the frontend ESLint script before submitting UI changes. Avoid committing generated `target/`, `dist/`, or dependency directories.
 
-- Spring Boot `4.0.6`
-- Spring Cloud `2025.1.1`
-- `user-service`, `activity-service`, `ai-service`, and `api-gateway` are configured as Eureka clients and use `config-server` for externalized configuration
-- `eureka-server` is the service registry at `http://localhost:8761/eureka`
+## Testing Guidelines
 
-## Service-Specific Working Rules
+Backend tests use Spring Boot/JUnit support and belong under the touched service's `src/test`. Name test classes after the unit under test, ending in `Test`. Run `./mvnw test` for the affected service. Frontend changes should pass `npm run lint` and `npm run build`; add focused tests when test coverage is introduced for a feature.
 
-- Do not assume every service uses the same database. `user-service` uses PostgreSQL, while `activity-service` and `ai-service` use MongoDB.
-- `ai-service` integrates with Kafka and requires Gemini API credentials.
-- `api-gateway` handles routing and JWT-based authentication via Keycloak.
-- When changing service discovery or configuration, keep `spring.application.name`, service ports, and Eureka URLs aligned with each service's `application.yaml`.
-- When editing code, keep changes scoped to the relevant service unless the feature explicitly spans multiple services.
-- For Java or Maven changes, verify the touched service's own `pom.xml` before assuming the same change applies repository-wide, because service dependencies and Java versions may differ.
+## Architecture and Configuration
 
-## Verification Guidance
+Keep service discovery names, ports, Config Server URLs, and Eureka settings aligned. `user-service` uses PostgreSQL; `activity-service` and `AI-Service` use MongoDB, with Kafka and Gemini credentials additionally required by `AI-Service`. `api-gateway` validates Keycloak JWTs and routes client traffic. Never commit credentials; use environment variables or local configuration.
 
-- Run Maven commands from the service directory you changed, not from the repository root.
-- Prefer validating the smallest affected scope first, such as `compile` or `test` for the touched service.
-<!-- context7 -->
+## Commits and Pull Requests
+
+Use Conventional Commit messages, such as `feat(frontend): add activity form` or `fix(api-gateway): correct JWT routing`. Keep commits focused. Pull requests should explain the behavior changed, identify affected services, list validation commands, and include screenshots for visible frontend changes. Call out required infrastructure or configuration changes explicitly.

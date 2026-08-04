@@ -4,11 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a microservices-based AI fitness application built with Spring Boot 4.0.6, Java 21, and PostgreSQL. The architecture follows a service-oriented design where each microservice handles a specific domain.
+This is a full-stack microservices-based AI fitness application featuring:
+- **Backend**: Spring Boot 4.0.6 microservices with Java 21
+- **Frontend**: React 19 with Vite, Redux state management, and Material-UI
+- **Architecture**: Service-oriented backend with OAuth2/Keycloak authentication for both frontend and APIs
 
 ## Technology Stack
 
-- **Framework**: Spring Boot 4.1.0
+### Backend
+- **Framework**: Spring Boot 4.0.6
 - **Java Version**: 21
 - **Build Tool**: Maven
 - **Databases**: 
@@ -26,136 +30,179 @@ This is a microservices-based AI fitness application built with Spring Boot 4.0.
 - **Code Generation**: Lombok
 - **JWT Parsing**: Nimbus JOSE + JWT for token parsing and validation
 
+### Frontend
+- **Framework**: React 19.2.6 with Vite 8.0.12 (build tool)
+- **State Management**: Redux 5.0.1 + Redux Toolkit 2.12.0
+- **UI Library**: Material-UI (MUI) 9.2.0 with Emotion styling
+- **HTTP Client**: Axios 1.19.0
+- **Authentication**: react-oauth2-code-pkce 1.24.0 (OAuth2 PKCE flow)
+- **Routing**: React Router 8.3.0
+- **Linting**: ESLint with React-specific rules
+- **Dev Server**: Vite with HMR (port 5173)
+- **Development**: Node.js 18+ with npm
+
 ## Project Structure
 
 ```
 ai-fitness-microservices/
-├── eureka-server/          # Service discovery server
-│   ├── src/main/java/com/sadcodes/eurekaserver/
-│   │   └── EurekaServerApplication.java
-│   └── src/main/resources/
-│       └── application.yaml  # Eureka server configuration (port 8761)
+├── backend/                # Spring Boot microservices
+│   ├── eureka-server/      # Service discovery server (port 8761)
+│   ├── Config-Server/      # Centralized configuration (port 8888)
+│   ├── api-gateway/        # API Gateway (port 9090) with OAuth2 security
+│   ├── user-service/       # User management (port 8081, PostgreSQL)
+│   ├── activity-service/   # Activity tracking (port 8082, MongoDB)
+│   └── AI-Service/         # AI recommendations (port 8083, MongoDB, Kafka consumer)
 │
-├── config-server/          # Centralized configuration server
-│   ├── src/main/java/com/sadcodes/configserver/
-│   │   └── ConfigServerApplication.java
-│   └── src/main/resources/
-│       ├── application.yaml  # Config server configuration (port 8888)
-│       └── config/           # Centralized service configurations
-│           ├── user-service.yml
-│           ├── activity-service.yml
-│           ├── ai-service.yml
-│           └── api-gateway-service.yml
+├── frontend/               # React frontend application
+│   └── ai-fitness-frontend/
+│       ├── public/         # Static assets (favicon.svg, icons.svg)
+│       ├── src/
+│       │   ├── App.jsx         # Main app component with routing
+│       │   ├── authConfig.js   # Keycloak OAuth2 PKCE configuration
+│       │   ├── main.jsx        # React entry point
+│       │   ├── index.css       # Global styles
+│       │   ├── App.css         # App-specific styles
+│       │   ├── components/     # Reusable React components
+│       │   │   ├── ActivityForm.jsx    # Form to log activities
+│       │   │   ├── ActivityList.jsx    # Display user activities
+│       │   │   └── ActivityDetail.jsx  # Individual activity view
+│       │   ├── services/       # API client layer
+│       │   │   └── api.js      # Axios instance with gateway base URL
+│       │   └── store/          # Redux state management
+│       │       ├── store.js    # Redux store configuration
+│       │       └── authSlice.js    # Authentication state slice
+│       ├── .eslintrc.cjs   # ESLint configuration
+│       ├── vite.config.js  # Vite build configuration
+│       ├── package.json    # Frontend dependencies
+│       └── README.md       # Frontend setup guide
 │
-├── api-gateway/            # API Gateway service (port 9090)
-│   ├── src/main/java/com/sadcodes/apigateway/
-│   │   ├── ApiGatewayApplication.java
-│   │   ├── config/           # Security and WebClient configuration
-│   │   │   ├── SecurityConfig.java      # OAuth2 JWT authentication
-│   │   │   └── WebClientConfig.java     # Load-balanced WebClient for user-service
-│   │   ├── filter/           # Web filters for request interception
-│   │   │   └── KeycloakUserSyncFilter.java # Keycloak JWT extraction & user sync
-│   │   └── user/             # User synchronization components
-│   │       ├── UserService.java         # REST calls to user-service
-│   │       ├── RegisterRequest.java     # User registration request DTO
-│   │       ├── UserResponse.java        # User response DTO
-│   │       └── WebClientConfig.java     # WebClient bean configuration
-│   └── src/main/resources/
-│       └── application.yaml  # Gateway configuration (port 9090)
-│
-├── user-service/          # User management microservice (port 8081)
-│   ├── src/main/java/com/sadcodes/userservice/
-│   │   ├── entity/        # JPA entities (User, UserRole)
-│   │   ├── dto/           # Data Transfer Objects (request/response)
-│   │   ├── repository/    # Spring Data JPA repositories
-│   │   ├── service/       # Business logic layer
-│   │   └── controller/    # REST API endpoints
-│   └── src/main/resources/
-│       └── application.yaml  # Service configuration
-│
-├── activity-service/      # Activity tracking microservice (port 8082)
-│   ├── src/main/java/com/sadcodes/activityservice/
-│   │   ├── model/         # MongoDB documents (Activity, ActivityType)
-│   │   ├── dto/           # Data Transfer Objects (request/response)
-│   │   ├── repositories/  # Spring Data MongoDB repositories
-│   │   ├── services/      # Business logic layer
-│   │   ├── controller/    # REST API endpoints
-│   │   └── config/        # MongoDB configuration
-│   └── src/main/resources/
-│       └── application.yaml  # Service configuration
-│
-├── ai-service/            # AI recommendation service (port 8083)
-│   ├── src/main/java/com/sadcodes/aiservice/
-│   │   ├── model/         # MongoDB documents (Recommendation, Activity, ActivityType)
-│   │   ├── dto/           # Data Transfer Objects
-│   │   ├── repositories/  # Spring Data MongoDB repositories
-│   │   ├── services/      # Business logic layer (RecommendationService, ActivityAiService)
-│   │   ├── listeners/     # Kafka message listeners (ActivityMessageListener)
-│   │   └── controller/    # REST API endpoints
-│   └── src/main/resources/
-│       └── application.yaml  # Service configuration
-│
-└── [future services]
+└── CLAUDE.md, README.md    # Project documentation
 ```
 
 ## Development Commands
 
-### Build and Test
+### Backend Build and Test
 
 ```bash
-# Build any service (replace {service} with: api-gateway, user-service, activity-service, ai-service, config-server, or eureka-server)
-cd {service} && ./mvnw clean install
+# Build any service (replace {service} with: api-gateway, user-service, activity-service, AI-Service, Config-Server, or eureka-server)
+cd backend/{service} && ./mvnw clean install
 
 # Run tests
-cd {service} && ./mvnw test
+cd backend/{service} && ./mvnw test
 
 # Run tests for a specific class
-cd {service} && ./mvnw test -Dtest=ClassName
+cd backend/{service} && ./mvnw test -Dtest=ClassName
 
 # Run a specific test method
-cd {service} && ./mvnw test -Dtest=ClassName#methodName
-```
+cd backend/{service} && ./mvnw test -Dtest=ClassName#methodName
 
-### Running the Application
-
-```bash
-# Start Eureka Server first (service discovery)
-cd eureka-server && ./mvnw spring-boot:run
-
-# Start Config Server (centralized configuration)
-cd config-server && ./mvnw spring-boot:run
-
-# Start API Gateway (entry point for all services)
-cd api-gateway && ./mvnw spring-boot:run
-
-# Run user-service (loads config from config-server)
-cd user-service && ./mvnw spring-boot:run
-
-# Run activity-service (loads config from config-server)
-cd activity-service && ./mvnw spring-boot:run
-
-# Run ai-service (loads config from config-server)
-cd ai-service && ./mvnw spring-boot:run
-
-# Run with specific profile
-cd {service} && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-**Note**: Services must be started in order:
-1. Eureka Server (required for service discovery)
-2. Config Server (required for centralized configuration)
-3. Gateway (optional but recommended as entry point)
-4. Individual microservices
-
-### Code Quality
-
-```bash
 # Compile and check for errors
-cd {service} && ./mvnw compile
+cd backend/{service} && ./mvnw compile
 
 # Clean build artifacts
-cd {service} && ./mvnw clean
+cd backend/{service} && ./mvnw clean
 ```
+
+### Frontend Build and Development
+
+```bash
+# Navigate to frontend directory
+cd frontend/ai-fitness-frontend
+
+# Install dependencies
+npm install
+
+# Start dev server (Vite HMR on http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build locally
+npm run preview
+
+# Run ESLint
+npm run lint
+
+# Run ESLint with auto-fix
+npm run lint -- --fix
+```
+
+### Running the Backend Services
+
+**Service startup order (critical)**:
+1. **Config Server** — required for centralized configuration
+2. **Eureka Server** — required for service discovery
+3. **User Service** — loads config from config-server
+4. **Activity Service** — loads config from config-server
+5. **AI Service** — loads config from config-server, requires GEMINI_API_KEY
+6. **API Gateway** — optional entry point (direct service access still works)
+
+```bash
+cd backend
+
+# Terminal 1: Config Server (port 8888)
+cd Config-Server && ./mvnw spring-boot:run
+
+# Terminal 2: Eureka Server (port 8761)
+cd eureka-server && ./mvnw spring-boot:run
+
+# Terminal 3: User Service (port 8081)
+cd user-service && ./mvnw spring-boot:run
+
+# Terminal 4: Activity Service (port 8082)
+cd activity-service && ./mvnw spring-boot:run
+
+# Terminal 5: AI Service (port 8083) - set environment variable first
+export GEMINI_API_KEY="your-gemini-api-key"
+cd AI-Service && ./mvnw spring-boot:run
+
+# Terminal 6: API Gateway (port 9090)
+cd api-gateway && ./mvnw spring-boot:run
+```
+
+### Running the Frontend
+
+```bash
+cd frontend/ai-fitness-frontend
+
+# Dev server with HMR (http://localhost:5173)
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Test the production build locally
+npm run preview
+```
+
+## Frontend Architecture
+
+### React + Vite Setup
+- **Framework**: React 19.2 with Vite 8 build tool
+- **UI Library**: Material-UI (MUI) v9
+- **State Management**: Redux with Redux Toolkit
+- **HTTP Client**: Axios with centralized configuration
+- **Authentication**: OAuth2 PKCE flow via `react-oauth2-code-pkce`
+- **Routing**: React Router v8
+- **Dev Server**: Vite with HMR (port 5173)
+
+### Authentication Flow (Frontend)
+1. User logs in via Keycloak OAuth2 PKCE flow using `react-oauth2-code-pkce` component wrapper
+2. OAuth2 provider returns access token (JWT)
+3. Token stored in Redux `authSlice.js`
+4. Axios instance in `services/api.js` automatically adds `Authorization: Bearer <token>` header to all requests
+5. Requests routed through API Gateway (http://localhost:9090)
+
+### State Management
+- **Redux Store** (`store/store.js`): Central store with `authSlice`
+- **Auth Slice** (`store/authSlice.js`): Handles login state, user info, token storage
+- **API Service** (`services/api.js`): Axios instance reads token from Redux state for requests
+
+### Component Structure
+- **ActivityForm.jsx**: Controlled form component for logging new activities (POST to `/api/activities/track`)
+- **ActivityList.jsx**: Displays paginated list of user activities (GET from `/api/activities/user/{userId}`)
+- **ActivityDetail.jsx**: Shows details of a single activity (GET from `/api/activities/{activityId}`)
 
 ## Database Setup
 
@@ -377,6 +424,40 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 - Updated from 8080 to **9090** to avoid conflicts with local development environments
 - Configured in: `config-server/src/main/resources/config/api-gateway-service.yml`
 
+## Frontend Patterns and Guidelines
+
+### React Component Structure
+- Components are placed in `src/components/` with JSX extension
+- Components are functional and use React hooks
+- Props are destructured in function parameters
+- Event handlers use camelCase naming (e.g., `handleSubmit`, `onClick`)
+- Controlled components manage state via React hooks for forms
+
+### Redux State Structure
+- Slices defined in `src/store/` using Redux Toolkit `createSlice`
+- State organized by domain (e.g., `authSlice`, future `activitySlice`, `recommendationSlice`)
+- Async operations use Redux Toolkit `createAsyncThunk` (not yet implemented)
+- Selectors created with `reselect` pattern when needed for performance
+
+### API Integration
+- All API calls go through `src/services/api.js` (Axios instance)
+- Base URL points to API Gateway: `http://localhost:9090`
+- JWT token added automatically to all requests via interceptor
+- Request/response error handling should be consistent across components
+- API service imports in components to avoid direct fetch/axios calls
+
+### Authentication Patterns
+- Login state managed in Redux `authSlice`
+- Protected routes wrap components that require authentication
+- Keycloak PKCE flow handled by `react-oauth2-code-pkce` library
+- Token automatically included in all API requests via Axios interceptor
+
+### Styling
+- Global styles in `src/index.css`
+- Component-specific styles in `src/App.css` or separate CSS files
+- Material-UI components used for consistency and faster development
+- Emotion (styled-components alternative) integrated via MUI
+
 ## Common Patterns
 
 ### Adding a New Microservice
@@ -403,9 +484,25 @@ docker run --name ai-fitness-kafka -d -p 9092:9092 -e KAFKA_ADVERTISED_LISTENERS
 3. Create controller method with appropriate HTTP method annotation
 4. Return `ResponseEntity` with appropriate status code
 
+### Adding a Frontend Feature
+
+1. Create new component in `src/components/` with JSX extension
+2. Import and use Material-UI components for UI
+3. Create API service function in `src/services/api.js` if needed
+4. Dispatch Redux actions if state needs to be shared across components
+5. Add React Router route in `src/App.jsx` if it's a new page
+6. Test the component by running `npm run dev` and checking the browser
+
 ## Testing and Development Notes
 
-### Testing Authenticated Endpoints
+### Frontend Development
+- Vite dev server includes HMR (Hot Module Replacement) — changes save automatically
+- Keycloak login is **required** to access protected routes (enforced in `App.jsx`)
+- Redux DevTools can be used for debugging state changes in browser
+- API requests include `Authorization: Bearer <token>` header automatically via `api.js` interceptor
+- `localhost:5173` for frontend, `localhost:9090` for API Gateway (CORS configured in gateway)
+
+### Testing Authenticated Backend Endpoints
 All endpoints accessed through the API Gateway (except `/eureka/**`) require a valid Keycloak JWT token in the `Authorization: Bearer <token>` header.
 
 **Without token**: Requests will receive 401 Unauthorized
@@ -424,6 +521,14 @@ Services can be accessed directly on their individual ports (8081, 8082, 8083) w
 - PostgreSQL must be running on port 5433 with database `microservice_ai_fitness`
 - MongoDB must be running on port 27017 with collections auto-created on first insert
 - Verify connections in service logs during startup
+
+### Frontend with Backend Integration
+1. Start all backend services (Config Server → Eureka → Microservices → Gateway)
+2. Configure Keycloak realm and create test users
+3. Update `authConfig.js` with correct Keycloak realm and client credentials if needed
+4. Run frontend dev server: `npm run dev` from `frontend/ai-fitness-frontend/`
+5. Navigate to `http://localhost:5173` and authenticate via Keycloak
+6. Frontend will call gateway endpoints on `http://localhost:9090` with JWT token
 
 ## Service Communication
 
@@ -525,6 +630,7 @@ Services can be accessed directly on their individual ports (8081, 8082, 8083) w
 
 ## Completed Features
 
+### Backend
 - ✅ API Gateway (Spring Cloud Gateway) - routes requests to microservices
 - ✅ OAuth2 JWT Authentication with Keycloak integration
 - ✅ Keycloak User Synchronization Filter - auto-registers Keycloak users to database
@@ -535,8 +641,18 @@ Services can be accessed directly on their individual ports (8081, 8082, 8083) w
 - ✅ MongoDB persistence for recommendations and activities
 - ✅ WebClient with @LoadBalanced for service-to-service communication
 
+### Frontend
+- ✅ React + Vite application with HMR
+- ✅ Keycloak OAuth2 PKCE authentication
+- ✅ Redux state management with auth persistence
+- ✅ Material-UI components for professional UI
+- ✅ Activity tracking form and list components
+- ✅ API integration with centralized Axios client
+- ✅ Protected routes requiring authentication
+
 ## Future Improvements to Consider
 
+### Backend Improvements
 - Implement global exception handling with `@ControllerAdvice`
 - Enhance password management: use proper encryption (BCrypt) instead of hardcoded "12345"
 - Implement DTO mapping library (MapStruct or ModelMapper)
@@ -553,3 +669,15 @@ Services can be accessed directly on their individual ports (8081, 8082, 8083) w
 - Implement API versioning strategy with gateway route versioning
 - Add refresh token support for long-lived sessions
 - Implement user preference caching to reduce database lookups during sync
+
+### Frontend Improvements
+- Add TypeScript for type safety
+- Implement error boundary components for better error handling
+- Add loading states and skeleton screens during API calls
+- Enhance form validation and user feedback
+- Add unit tests with Vitest/React Testing Library
+- Implement recommendations display component
+- Add activity filtering/sorting capabilities
+- Optimize Bundle size and lazy-load routes
+- Add PWA capabilities for offline support
+- Implement real-time updates via WebSocket for activity notifications
