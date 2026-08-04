@@ -1,4 +1,4 @@
 ### GET USER RECOMMENDATION
-GET http://localhost:8083//api/recommendations/activity/1
+GET http://localhost:9090/api/recommendations/activity/1
 
 ###

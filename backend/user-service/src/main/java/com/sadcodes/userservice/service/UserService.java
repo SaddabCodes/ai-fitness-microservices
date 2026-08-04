@@ -14,12 +14,18 @@ public class UserService {
     private final UserRepository userRepository;
 
     public UserResponse register(RegisterRequest request) {
+        User user = userRepository.findByKeycloakId(request.getKeycloakId())
+                .orElse(null);
+
+        if (user != null) {
+            return mapToResponse(user);
+        }
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exist");
         }
 
-        User user = new User();
+        user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
         user.setFirstName(request.getFirstName());
@@ -27,17 +33,7 @@ public class UserService {
         user.setKeycloakId(request.getKeycloakId());
         User savedUser = userRepository.save(user);
 
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(savedUser.getId());
-        userResponse.setEmail(savedUser.getEmail());
-        userResponse.setPassword(savedUser.getPassword());
-        userResponse.setKeycloakId(savedUser.getKeycloakId());
-        userResponse.setFirstName(savedUser.getFirstName());
-        userResponse.setLastName(savedUser.getLastName());
-        userResponse.setCreatedAt(savedUser.getCreatedAt());
-        userResponse.setUpdatedAt(savedUser.getUpdatedAt());
-
-        return userResponse;
+        return mapToResponse(savedUser);
     }
 
     public UserResponse getUserProfile(String userId) {
@@ -61,5 +57,18 @@ public class UserService {
 
     public boolean existByUser(String userId) {
         return userRepository.existsById(userId);
+    }
+
+    private UserResponse mapToResponse(User user) {
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(user.getId());
+        userResponse.setEmail(user.getEmail());
+        userResponse.setPassword(user.getPassword());
+        userResponse.setKeycloakId(user.getKeycloakId());
+        userResponse.setFirstName(user.getFirstName());
+        userResponse.setLastName(user.getLastName());
+        userResponse.setCreatedAt(user.getCreatedAt());
+        userResponse.setUpdatedAt(user.getUpdatedAt());
+        return userResponse;
     }
 }

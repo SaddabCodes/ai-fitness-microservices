@@ -6,27 +6,37 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
+import { addActivity } from "../services/api";
 
 function ActivityForm({ onActivitiesAdded }) {
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    return now.toISOString().slice(0, 19);
+  };
+
   const [activity, setActivity] = useState({
     type: "RUNNING",
-    duration: "",
-    caloriesBurned: "",
+    duration: 0,
+    caloriesBurned: 0,
+    startTime: getCurrentDateTime(),
     additionalMetrics: {},
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // await addActivity(activity)
+      await addActivity(activity);
       onActivitiesAdded();
       setActivity({
         type: "RUNNING",
-        duration: "",
-        caloriesBurned: "",
+        duration: 0,
+        caloriesBurned: 0,
+        startTime: getCurrentDateTime(),
         additionalMetrics: {},
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -47,11 +57,11 @@ function ActivityForm({ onActivitiesAdded }) {
 
       <TextField
         fullWidth
-        label="Duration"
+        label="Duration (minutes)"
         type="number"
         sx={{ mb: 2 }}
         value={activity.duration}
-        onChange={(e) => setActivity({ ...activity, duration: e.target.value })}
+        onChange={(e) => setActivity({ ...activity, duration: parseInt(e.target.value) || 0 })}
       ></TextField>
 
       <TextField
@@ -61,7 +71,7 @@ function ActivityForm({ onActivitiesAdded }) {
         sx={{ mb: 2 }}
         value={activity.caloriesBurned}
         onChange={(e) =>
-          setActivity({ ...activity, caloriesBurned: e.target.value })
+          setActivity({ ...activity, caloriesBurned: parseInt(e.target.value) || 0 })
         }
       ></TextField>
 

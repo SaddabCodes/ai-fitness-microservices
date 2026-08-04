@@ -11,7 +11,6 @@ import java.util.Map;
 @Data
 public class ActivityRequest {
 
-    @NotBlank(message = "userId is required")
     private String userId;
 
     @NotNull(message = "type is required")
