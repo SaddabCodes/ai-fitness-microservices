@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/activities")
@@ -20,5 +22,10 @@ public class ActivityController {
     public ResponseEntity<ActivityResponse> trackActivity(@Valid @RequestBody ActivityRequest request, @RequestHeader("X-User-ID")String userId) {
         request.setUserId(userId);
         return new ResponseEntity<>(activityService.trackActivity(request), HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List< ActivityResponse>> getUserActivity(@RequestHeader("X-User-ID")String userId) {
+        return new ResponseEntity<>(activityService.getUserActivity(userId),HttpStatus.OK);
     }
 }

@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ActivityService {
@@ -61,5 +63,12 @@ public class ActivityService {
         return activityResponse;
 
 
+    }
+
+    public List<ActivityResponse> getUserActivity(String userId) {
+        List<Activity> activityList = activityRepositories.findByUserId(userId);
+        return activityList.stream()
+                .map(activity -> mapToResponse(activity))
+                .toList();
     }
 }

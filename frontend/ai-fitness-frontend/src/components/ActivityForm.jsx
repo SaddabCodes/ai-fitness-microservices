@@ -18,20 +18,22 @@ function ActivityForm({ onActivitiesAdded }) {
     type: "RUNNING",
     duration: 0,
     caloriesBurned: 0,
-    startTime: getCurrentDateTime(),
     additionalMetrics: {},
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await addActivity(activity);
+      const activityWithTime = {
+        ...activity,
+        startTime: getCurrentDateTime(),
+      };
+      await addActivity(activityWithTime);
       onActivitiesAdded();
       setActivity({
         type: "RUNNING",
         duration: 0,
         caloriesBurned: 0,
-        startTime: getCurrentDateTime(),
         additionalMetrics: {},
       });
     } catch (error) {
@@ -61,7 +63,9 @@ function ActivityForm({ onActivitiesAdded }) {
         type="number"
         sx={{ mb: 2 }}
         value={activity.duration}
-        onChange={(e) => setActivity({ ...activity, duration: parseInt(e.target.value) || 0 })}
+        onChange={(e) =>
+          setActivity({ ...activity, duration: parseInt(e.target.value) || 0 })
+        }
       ></TextField>
 
       <TextField
@@ -71,7 +75,10 @@ function ActivityForm({ onActivitiesAdded }) {
         sx={{ mb: 2 }}
         value={activity.caloriesBurned}
         onChange={(e) =>
-          setActivity({ ...activity, caloriesBurned: parseInt(e.target.value) || 0 })
+          setActivity({
+            ...activity,
+            caloriesBurned: parseInt(e.target.value) || 0,
+          })
         }
       ></TextField>
 
@@ -83,3 +90,5 @@ function ActivityForm({ onActivitiesAdded }) {
 }
 
 export default ActivityForm;
+
+
