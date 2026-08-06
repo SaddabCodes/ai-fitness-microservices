@@ -10,22 +10,25 @@ function ActivityList() {
   const [activities, setActivities] = useState([]);
   const navigate = useNavigate();
 
-  const fetchActivities = async () => {
-    try {
-      const response = await getActivity()
-      setActivities(response.data)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   useEffect(() => {
-    fetchActivities()
-  },[])
+    let cancelled = false;
+
+    getActivity()
+      .then((response) => {
+        if (!cancelled) {
+          setActivities(response.data);
+        }
+      })
+      .catch((error) => console.error(error));
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   return (
     <Grid container spacing={2}>
       {activities.map((activity) => (
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid key={activity.id} item xs={12} sm={6} md={4}>
           <Card sx={{ cursor: "pointer" }}
           onClick = {()=> navigate(`/activities/${activity.id}`)}
           >

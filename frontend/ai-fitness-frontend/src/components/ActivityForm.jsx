@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -20,9 +21,11 @@ function ActivityForm({ onActivitiesAdded }) {
     caloriesBurned: 0,
     additionalMetrics: {},
   });
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
       const activityWithTime = {
         ...activity,
@@ -38,11 +41,16 @@ function ActivityForm({ onActivitiesAdded }) {
       });
     } catch (error) {
       console.error(error);
+      const errorData = error.response?.data;
+      const responseMessage = errorData?.error || errorData?.message ||
+        (errorData?.errors ? Object.values(errorData.errors)[0] : null);
+      setError(responseMessage || "Unable to add activity. Please sign in again and retry.");
     }
   };
 
   return (
     <Box component="form" sx={{ mb: 2 }} onSubmit={handleSubmit}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <FormControl fullWidth sx={{ mb: 2 }}>
         <InputLabel>Activity Type</InputLabel>
         <Select
@@ -53,7 +61,11 @@ function ActivityForm({ onActivitiesAdded }) {
         >
           <MenuItem value="RUNNING">Running</MenuItem>
           <MenuItem value="WALKING">Walking</MenuItem>
-          <MenuItem value="CYCLING">Cycling</MenuItem>
+          <MenuItem value="CARDIO">Cardio</MenuItem>
+          <MenuItem value="WEIGHT_TRAINING">Weight Training</MenuItem>
+          <MenuItem value="YOGA">Yoga</MenuItem>
+          <MenuItem value="SWIMMING">Swimming</MenuItem>
+          <MenuItem value="HIIT">HIIT</MenuItem>
         </Select>
       </FormControl>
 
