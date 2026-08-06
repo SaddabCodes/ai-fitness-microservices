@@ -56,7 +56,14 @@ public class UserService {
     }
 
     public boolean existByUser(String userId) {
-        return userRepository.existsById(userId);
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+
+        // The gateway propagates the Keycloak subject, while the database also
+        // has its own generated primary key. Accept both identifiers here.
+        return userRepository.existsById(userId)
+                || userRepository.existsByKeycloakId(userId);
     }
 
     private UserResponse mapToResponse(User user) {

@@ -22,10 +22,15 @@ public class ActivityAiService {
     private final GeminiService geminiService;
 
     public Recommendation generateRecommendation(Activity activity) {
-        String prompt = createPromptForActivity(activity);
-        String aiResponse = geminiService.getRecommendation(prompt);
-        log.info("RESPONSE FROM AI {}", aiResponse);
-        return processAiResponse(activity, aiResponse);
+        try {
+            String prompt = createPromptForActivity(activity);
+            String aiResponse = geminiService.getRecommendation(prompt);
+            log.info("RESPONSE FROM AI {}", aiResponse);
+            return processAiResponse(activity, aiResponse);
+        } catch (Exception e) {
+            log.error("Unable to generate AI recommendation for activity {}", activity.getId(), e);
+            return createDefaultRecommendation(activity);
+        }
     }
 
     private Recommendation processAiResponse(Activity activity, String aiResponse) {
@@ -83,7 +88,7 @@ public class ActivityAiService {
                 .improvements(Collections.singletonList("Continue with your current routine"))
                 .suggestions(Collections.singletonList("Consider consulting a fitness consultant"))
                 .safety(Arrays.asList(
-                        "Always warm uop before exercise",
+                        "Always warm up before exercise",
                         "Stay hydrated",
                         "Listen to your body"
                 ))

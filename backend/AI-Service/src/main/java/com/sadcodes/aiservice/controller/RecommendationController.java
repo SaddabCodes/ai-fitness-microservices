@@ -4,12 +4,14 @@ import com.sadcodes.aiservice.model.Recommendation;
 import com.sadcodes.aiservice.services.RecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @RestController
@@ -25,6 +27,9 @@ public class RecommendationController {
 
   @GetMapping("/activity/{activityId}")
     public ResponseEntity<Recommendation> getActivityRecommendation(@PathVariable String activityId) {
-        return ResponseEntity.ok(recommendationService.getActivityRecommendation(activityId));
+      Optional<Recommendation> recommendation = recommendationService.getActivityRecommendation(activityId);
+      return recommendation
+              .map(ResponseEntity::ok)
+              .orElseGet(() -> ResponseEntity.status(HttpStatus.ACCEPTED).build());
     }
 }
