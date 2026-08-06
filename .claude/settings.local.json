@@ -9,7 +9,9 @@
       "Bash(timeout 20 ./mvnw spring-boot:run)",
       "Bash(./mvnw validate *)",
       "Bash(cat)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(find \"c:\\\\\\\\Spring-Project\\\\\\\\ai-fitness-microservices\\\\\\\\frontend\" -name \"package.json\" -o -name \".env*\")",
+      "Bash(find \"c:\\\\\\\\Spring-Project\\\\\\\\ai-fitness-microservices\\\\\\\\frontend\\\\\\\\ai-fitness-frontend\" -maxdepth 2 -name \"package.json\" -o -name \".env*\")"
     ]
   }
 }
